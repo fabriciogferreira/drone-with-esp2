@@ -1,0 +1,54 @@
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
+https://espressif.github.io/arduino-esp32/package_esp32_index.json
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+BASE:
+    https://arduproject.es/mando-rc-y-receptor-programacion-en-arduino-sketch/
+
+BIBLIOTECAS ARDUINO IDE:
+    http://arduino.esp8266.com/stable/package_esp8266com_index.json
+    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+INTALAÇÕES ARDUIONO IDE:
+    ESP32: https://randomnerdtutorials.com/installing-esp32-arduino-ide-2-0/
+
+CONCEITOS:
+    INTERRUPÇÕES: https://www.makerhero.com/blog/uso-de-interrupcoes-externas-com-esp32/
+
+ESQUEMAS:
+    JOYSTICK: https://wokwi.com/projects/371517956857420801
+
+CÓDIGOS:
+    DRONE: https://www.instructables.com/ESP32-LoRa-Controlled-Drone-Engine/
+    COMUNICAÇÃO ESP32:
+        https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
+        https://www.youtube.com/watch?v=JkMOrQ2Occw&t=774s
+        https://www.youtube.com/watch?v=BsZ6TQcW9u0&t=762s
+
+BUGS ESP32:
+    MD5 of file does not match data in flash:
+        https://github.com/tbnobody/OpenDTU/discussions/1070
+        https://www.youtube.com/watch?v=lthKBGacyVs
+            python -m esptool --chip esp32 --port COM15 --baud 115200 --after hard_reset erase_flash
+            python -m esptool --port COM5 write_flash_status --non-volatile 0
+
+DOCUMENTAÇÃO:
+    BATERIA: https://www.bukalapak.com/p/hobi-koleksi/grosir-hobi-koleksi/3lfzrg6-jual-all-new-uruav-11-1v-4200mah-75c-3s-lipo-battery-xt60-plug-for-rc-racing-drone?from=list-product&pos=1
+    BATERIA: https://usawire.com/understanding-8-basic-points-about-3s-lipo-batteries/#:~:text=The%20%E2%80%9C3S%E2%80%9D%20designation%20refers%20to,wide%20range%20of%20RC%20models.
+    MOTORES: https://emaxmodel.com/products/emax-rs2205-racespec-motor-cooling-series
+    ESC: https://www.flyingtech.co.uk/sites/default/files/product_files/S_DShot600.pdf
+    PINAGEM ESP32: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/_images/esp32-devkitC-v4-pinout.png
+    MPU6050: https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf
+    //CASO VÁ MUDAR OS PINOS DO JOYSTICK, CONSIDERE LER: https://www.esp32.com/viewtopic.php?t=8728
+    Hz máximo do ESC (pg, 6): https://bluerobotics.com/wp-content/uploads/2018/10/BLHeli_S-manual-SiLabs-Rev16.x.pdf
+JOYSTICK:
+    Interrupção: https://www.youtube.com/watch?v=373k6-KwOEE&t=642s
+    https://os.mbed.com/users/fpucher/code/ESP32/wiki/Joystick-Interrupt
+
+https://os.mbed.com/users/fpucher/code/ESP32/wiki/Joystick-Interrupt
+https://www.youtube.com/watch?v=zJBl94WdWvg
+https://arduino.stackexchange.com/questions/94281/how-can-i-compensate-for-a-joysticks-offset-value-in-neutral-position
+
+ESP32 16 canais independentes de 80 MHz
+
+ESC suporta até 32000Hz
