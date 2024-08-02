@@ -25,6 +25,7 @@ const int PIN_J2Z = 26;
 
 const int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
 int maxRangeOfJoystickAxes[] = {0, 0, 0, 0};
+int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
 
 void startSerial(){
@@ -93,11 +94,29 @@ void getRangeOfJoystickAxes(){
   }while(digitalRead(PIN_J2Z));
 }
 
+void getAverageOfJoystickAxes(){
+  printOnDisplay("Calculando o meio dos eixos dos joysticks", true, 0, true);
+
+  int max = 3000;
+  for (int i = 0; i < max; i++) {
+    for (int j = 0; j < getArraySize(PT_PINS_XY_JS); j++) {
+      midRangeOfJoystickAxes[j] = midRangeOfJoystickAxes[j] + analogRead(*PT_PINS_XY_JS[j]);
+    }
+    // delayMicroseconds(20);
+  }
+
+  for (int i = 0; i < 4; i++) {
+    midRangeOfJoystickAxes[i] = midRangeOfJoystickAxes[i]/max;
+    printOnDisplay(String(*PT_PINS_XY_JS[i]) + ": " + String(midRangeOfJoystickAxes[i]));
+  }
+}
+
 void setup() {
   startSerial();
   configDisplay();
   configJoystick();
   getRangeOfJoystickAxes();
+  getAverageOfJoystickAxes();
 }
 
 void loop() {
