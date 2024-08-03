@@ -27,7 +27,8 @@ const int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
 int maxRangeOfJoystickAxes[] = {0, 0, 0, 0};
 int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
-
+const int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
+int joystickAxisDeadZones[] = {0, 0, 0, 0};
 void startSerial(){
   Serial.begin(115200);
 }
@@ -111,12 +112,23 @@ void getAverageOfJoystickAxes(){
   }
 }
 
+void getDeadZonesOfJoystickAxes(){
+  printOnDisplay("Deadzone dos eixos dos joysticks", true, 0, true);
+
+  for (int i = 0; i < 4; i++) {
+    joystickAxisDeadZones[i] = JOYSTICK_AXIS_DEAD_ZONE_RATES[i] * midRangeOfJoystickAxes[i] / 100;
+
+    printOnDisplay(String(*PT_PINS_XY_JS[i]) + ": " + String(midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) + " - " + String(midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]));
+  }
+}
+
 void setup() {
   startSerial();
   configDisplay();
   configJoystick();
   getRangeOfJoystickAxes();
   getAverageOfJoystickAxes();
+  getDeadZonesOfJoystickAxes();
 }
 
 void loop() {
