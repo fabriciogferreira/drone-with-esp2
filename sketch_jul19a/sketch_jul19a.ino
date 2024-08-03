@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <WiFi.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -122,6 +123,13 @@ void getDeadZonesOfJoystickAxes(){
   }
 }
 
+void StartStationMode() {
+  WiFi.mode(WIFI_STA);
+
+  printOnDisplay("Inicializando o modo station", true, 0, true);
+  printOnDisplay("Mac Address desse ESP em Station: " + WiFi.macAddress(), true, 0, true);
+}
+
 void setup() {
   startSerial();
   configDisplay();
@@ -129,6 +137,7 @@ void setup() {
   getRangeOfJoystickAxes();
   getAverageOfJoystickAxes();
   getDeadZonesOfJoystickAxes();
+  StartStationMode();
 }
 
 void loop() {
