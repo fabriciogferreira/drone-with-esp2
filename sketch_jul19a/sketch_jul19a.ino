@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <WiFi.h>
 #include <Wire.h>
+#include <esp_now.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -127,7 +128,17 @@ void StartStationMode() {
   WiFi.mode(WIFI_STA);
 
   printOnDisplay("Inicializando o modo station", true, 0, true);
-  printOnDisplay("Mac Address desse ESP em Station: " + WiFi.macAddress(), true, 0, true);
+  printOnDisplay("Mac Address desse ESP em Station: " + WiFi.macAddress());
+}
+
+void StartEspNow() {
+  bool Result = esp_now_init() == ESP_OK;
+
+  String message = Result ? "ESPNow iniciado com sucesso." : "Não foi possível iniciar o ESPNow.";
+  
+  printOnDisplay(message, true, 0, true);
+
+  if (!Result) {ESP.restart();}
 }
 
 void setup() {
@@ -138,6 +149,7 @@ void setup() {
   getAverageOfJoystickAxes();
   getDeadZonesOfJoystickAxes();
   StartStationMode();
+  StartEspNow();
 }
 
 void loop() {
