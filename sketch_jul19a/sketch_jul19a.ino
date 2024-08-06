@@ -15,6 +15,13 @@
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 Display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+//---------------------------------------|ESP|---------------------------------------
+const uint8_t SLAVES_MAC_ADDRESS[][6] = {
+  { 0xCC, 0xDB, 0xA7, 0x30, 0x46, 0x34 }  //Mac address do ESP32 do drone
+};
+const int CHANNEL = 1;  //Canal do slave
+const int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
+
 //-------------------------------------|CONTROL|-------------------------------------
 //DOF = Degrees Of Freedom
 //J1x, J1y, J1z, J2x, J2y, J2z
@@ -31,6 +38,15 @@ int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
 const int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
 int joystickAxisDeadZones[] = {0, 0, 0, 0};
+
+struct Package {
+    int id;
+    int setpoints[4];
+    int throtle;
+};
+
+Package package = {1, {4, 7, 3,5}, 1240};
+
 void startSerial(){
   Serial.begin(115200);
 }
@@ -141,28 +157,55 @@ void StartEspNow() {
   if (!Result) {ESP.restart();}
 }
 
+void SendDataEspDrone() {
+  esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &package, sizeof(package));
+}
+
+void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+  SendDataEspDrone();
+}
+
+void RegisterFunctionThatExecutesWhenReceivingData(){
+  esp_now_register_send_cb(WhenReceivingResponseDo);
+}
+
+void EstablishConnectionBetweenESPs(){
+  printOnDisplay("Configurando Master (Mestre) e Escravos (Slaves)...", true, 500, true);
+
+  for (int i = 0; i < AMOUNT_OF_SLAVES; i++) {
+    esp_now_peer_info_t Slave = {};
+    Slave.channel = CHANNEL;
+    Slave.encrypt = 0;
+    memcpy(Slave.peer_addr, SLAVES_MAC_ADDRESS[i], sizeof(SLAVES_MAC_ADDRESS[i]));
+    esp_now_add_peer(&Slave);
+  }
+}
+
 void setup() {
   startSerial();
   configDisplay();
-  configJoystick();
-  getRangeOfJoystickAxes();
-  getAverageOfJoystickAxes();
-  getDeadZonesOfJoystickAxes();
+  // configJoystick();
+  // getRangeOfJoystickAxes();
+  // getAverageOfJoystickAxes();
+  // getDeadZonesOfJoystickAxes();
   StartStationMode();
   StartEspNow();
+  RegisterFunctionThatExecutesWhenReceivingData();
+  EstablishConnectionBetweenESPs();
+  SendDataEspDrone();
 }
 
 void loop() {
-  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
-    Serial.print(analogRead(*PT_PINS_XY_JS[i]));
-    Serial.print("\t");
-  }
+  // for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
+  //   Serial.print(analogRead(*PT_PINS_XY_JS[i]));
+  //   Serial.print("\t");
+  // }
 
-  Serial.print(digitalRead(PIN_J1Z));
-  Serial.print("\t");
+  // Serial.print(digitalRead(PIN_J1Z));
+  // Serial.print("\t");
 
-  Serial.print(digitalRead(PIN_J2Z));
-  Serial.print("\t");
+  // Serial.print(digitalRead(PIN_J2Z));
+  // Serial.print("\t");
 
-  Serial.println();
+  // Serial.println();
 }

@@ -3,6 +3,14 @@
 #include <Wire.h>
 #include <esp_now.h>
 
+//----------------------------------|COMUNICATION|-----------------------------------
+struct Package {
+    int id;
+    int setpoints[4];
+    int throtle;
+};
+
+Package package;
 //-------------------------------------|ENGINES|-------------------------------------
 const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
@@ -16,6 +24,7 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 const int MPU6050_ERROR_LED_PIN = 16;
 
 void StartStationMode() {
+  WiFi.begin();
   WiFi.mode(WIFI_STA);
 }
 
@@ -94,13 +103,23 @@ void SetupMPU6050() {
   */
 }
 
+void WhenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
+  memcpy(&package, PACKAGE, sizeof(package));
+}
+
+void RegisterFunctionThatExecutesWhenReceivingData(){
+  esp_now_register_recv_cb(WhenReceivingDataDo);
+}
+
 void setup() {
+  Serial.begin(115200);
   StartStationMode();
   StartEspNow();
   Settings();
   SetupMPU6050();
+  RegisterFunctionThatExecutesWhenReceivingData();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  Serial.println(package.throtle);
 }
