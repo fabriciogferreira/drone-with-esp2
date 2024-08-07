@@ -19,33 +19,38 @@ Adafruit_SSD1306 Display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const uint8_t SLAVES_MAC_ADDRESS[][6] = {
   { 0xCC, 0xDB, 0xA7, 0x30, 0x46, 0x34 }  //Mac address do ESP32 do drone
 };
-const int CHANNEL = 1;  //Canal do slave
-const int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
+const unsigned int CHANNEL = 1;  //Canal do slave
+const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
 
 //-------------------------------------|CONTROL|-------------------------------------
 //DOF = Degrees Of Freedom
 //J1x, J1y, J1z, J2x, J2y, J2z
-const int PIN_YAW = 35;
-const int PIN_THROTTLE = 34;
-const int PIN_J1Z = 25;
-const int PIN_ROLL = 33;
-const int PIN_PITCH = 32;
-const int PIN_J2Z = 26;
+const unsigned int PIN_YAW = 35;
+const unsigned int PIN_THROTTLE = 34;
+const unsigned int PIN_J1Z = 25;
+const unsigned int PIN_ROLL = 33;
+const unsigned int PIN_PITCH = 32;
+const unsigned int PIN_J2Z = 26;
 
-const int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
-int maxRangeOfJoystickAxes[] = {0, 0, 0, 0};
-int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
+const unsigned int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
+const int MIN_SETPOINTS[] = {-30, 950, -30, -30};
+const int MID_SETPOINTS[] = {0, 1525, 0, 0};
+const int MAX_SETPOINTS[] = {30, 2000, 30, 30};
+unsigned int maxRangeOfJoystickAxes[] = {0, 0, 0, 0};
+unsigned int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
-const int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
-int joystickAxisDeadZones[] = {0, 0, 0, 0};
+const unsigned int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
+unsigned int joystickAxisDeadZones[] = {0, 0, 0, 0};
+int SetPoints[] = {0, 0, 0, 0};
 
+//----------------------------------|COMUNICATION|-----------------------------------
 struct Package {
-    int id;
-    int setpoints[4];
-    int throtle;
+    unsigned int dof[3];
+    unsigned int throttle;
 };
 
-Package package = {1, {4, 7, 3,5}, 1240};
+Package package = {{4, 7, 5}, 1240};
+
 
 void startSerial(){
   Serial.begin(115200);
@@ -161,6 +166,20 @@ void SendDataEspDrone() {
   esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &package, sizeof(package));
 }
 
+void CalculatePackageValues() {
+  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {  
+    SetPoints[i] = analogRead(*PT_PINS_XY_JS[i]);
+    SetPoints[i] = constrain(SetPoints[i], minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
+    if (SetPoints[i] <= midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) {
+      SetPoints[i] = map(SetPoints[i], minRangeOfJoystickAxes[i], midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i], MIN_SETPOINTS[i], MID_SETPOINTS[i]);
+    } else if (SetPoints[i] >= midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]) {
+      SetPoints[i] = map(SetPoints[i], midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i], maxRangeOfJoystickAxes[i], MID_SETPOINTS[i], MAX_SETPOINTS[i]);
+    } else {
+      SetPoints[i] = MID_SETPOINTS[i];
+    }
+  }
+}
+
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
   SendDataEspDrone();
 }
@@ -184,10 +203,10 @@ void EstablishConnectionBetweenESPs(){
 void setup() {
   startSerial();
   configDisplay();
-  // configJoystick();
-  // getRangeOfJoystickAxes();
-  // getAverageOfJoystickAxes();
-  // getDeadZonesOfJoystickAxes();
+  configJoystick();
+  getRangeOfJoystickAxes();
+  getAverageOfJoystickAxes();
+  getDeadZonesOfJoystickAxes();
   StartStationMode();
   StartEspNow();
   RegisterFunctionThatExecutesWhenReceivingData();
