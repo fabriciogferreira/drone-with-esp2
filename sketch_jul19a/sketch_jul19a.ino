@@ -47,10 +47,10 @@ int SetPoints[] = {0, 0, 0, 0};
 struct Package {
     unsigned int dof[3];
     unsigned int throttle;
+    volatile bool flightMode;
 };
 
-Package package = {{4, 7, 5}, 1240};
-
+Package package = {{4, 7, 5}, 1240, true};
 
 void startSerial(){
   Serial.begin(115200);
@@ -77,6 +77,10 @@ int getArraySize(T (&array)[N]) {
   return N;
 }
 
+void invertFlightMode(){
+  package.flightMode = !package.flightMode;
+}
+
 void configJoystick(){
   printOnDisplay("Configurando joysticks", true, 1000, true);
   for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
@@ -85,6 +89,8 @@ void configJoystick(){
 
   pinMode(PIN_J1Z, INPUT_PULLUP);
   pinMode(PIN_J2Z, INPUT_PULLUP);
+
+  attachInterrupt(digitalPinToInterrupt(PIN_J1Z), invertFlightMode, FALLING);
 }
 
 void stopUntilPressToContinue(String text){
