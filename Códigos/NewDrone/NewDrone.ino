@@ -11,6 +11,8 @@ struct Package {
 };
 
 Package package;
+
+bool isDisconnected = true;
 //-------------------------------------|ENGINES|-------------------------------------
 const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
@@ -53,6 +55,11 @@ void settings(){
     ledcAttachChannel(MOTOR_PINS[i], FREQUENCY, RESOLUTION, CHANNELS[i]);
     ledcWrite(MOTOR_PINS[i], MIN_SPEED);    
   }
+}
+
+void registerFunctionThatExecutesWhenReceivingData(){
+  esp_now_register_recv_cb(whenReceivingDataDo);
+  while (isDisconnected);
 }
 
 void setupMPU6050() {
@@ -106,23 +113,21 @@ void setupMPU6050() {
   */
 }
 
-void registerFunctionThatExecutesWhenReceivingData(){
-  esp_now_register_recv_cb(whenReceivingDataDo);
-}
-
 void setup() {
   startSerial();
   startStationMode();
   startEspNow();
   settings();
-  setupMPU6050();
   registerFunctionThatExecutesWhenReceivingData();
+  
+  // setupMPU6050();
 }
 
 void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
+  isDisconnected = false;
   memcpy(&package, PACKAGE, sizeof(package));
 }
 
 void loop() {
-  Serial.println(package.throtle);
+  // Serial.println(package.throttle);
 }
