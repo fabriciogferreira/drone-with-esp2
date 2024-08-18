@@ -59,18 +59,6 @@ int lastPinJ2ZState = pinJ2ZState;
 unsigned long j2ZLastDebounceTime = 0;  // the last time the output pin was toggled
 const unsigned int J2Z_DEBOUNCE_DELAY = 50; 
 
-void startSerial(){
-  Serial.begin(115200);
-}
-
-void configDisplay(){
-  Display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
-  Display.setCursor(0,0);
-  Display.setTextSize(1);
-  Display.setTextColor(SSD1306_WHITE);
-  Display.clearDisplay();
-}
-
 void printOnDisplay(String text, bool resetCursor = NULL, int delayTime = 0, bool clearDisplay = NULL){
   if (clearDisplay) Display.clearDisplay();
   if (resetCursor) Display.setCursor(0,0);
@@ -86,22 +74,6 @@ int getArraySize(T (&array)[N]) {
 
 void invertFlightMode(){
   package.flightMode = !package.flightMode;
-}
-
-void configJoystick(){
-  printOnDisplay("Configurando joysticks", true, 1000, true);
-  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
-    pinMode(*PT_PINS_XY_JS[i], INPUT);
-  }
-
-  pinMode(PIN_J1Z, INPUT_PULLUP);
-  pinMode(PIN_J2Z, INPUT);
-
-  attachInterrupt(digitalPinToInterrupt(PIN_J1Z), invertFlightMode, FALLING);
-}
-
-void resetStop(){
-  stop = true;
 }
 
 void readJ2Z(){
@@ -127,6 +99,48 @@ void stopUntilPressToContinue(String text){
   while (stop){
     readJ2Z();
   };
+}
+
+void resetStop(){
+  stop = true;
+}
+
+void CalculatePackageValues() {
+  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {  
+    SetPoints[i] = analogRead(*PT_PINS_XY_JS[i]);
+    SetPoints[i] = constrain(SetPoints[i], minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
+    if (SetPoints[i] <= midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) {
+      SetPoints[i] = map(SetPoints[i], minRangeOfJoystickAxes[i], midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i], MIN_SETPOINTS[i], MID_SETPOINTS[i]);
+    } else if (SetPoints[i] >= midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]) {
+      SetPoints[i] = map(SetPoints[i], midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i], maxRangeOfJoystickAxes[i], MID_SETPOINTS[i], MAX_SETPOINTS[i]);
+    } else {
+      SetPoints[i] = MID_SETPOINTS[i];
+    }
+  }
+}
+
+void startSerial(){
+  Serial.begin(115200);
+}
+
+void configDisplay(){
+  Display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
+  Display.setCursor(0,0);
+  Display.setTextSize(1);
+  Display.setTextColor(SSD1306_WHITE);
+  Display.clearDisplay();
+}
+
+void configJoystick(){
+  printOnDisplay("Configurando joysticks", true, 1000, true);
+  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
+    pinMode(*PT_PINS_XY_JS[i], INPUT);
+  }
+
+  pinMode(PIN_J1Z, INPUT_PULLUP);
+  pinMode(PIN_J2Z, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(PIN_J1Z), invertFlightMode, FALLING);
 }
 
 void getRangeOfJoystickAxes(){
@@ -184,14 +198,14 @@ void getDeadZonesOfJoystickAxes(){
   }
 }
 
-void StartStationMode() {
+void startStationMode() {
   WiFi.mode(WIFI_STA);
 
   printOnDisplay("Inicializando o modo station", true, 0, true);
   printOnDisplay("Mac Address desse ESP em Station: " + WiFi.macAddress());
 }
 
-void StartEspNow() {
+void startEspNow() {
   bool Result = esp_now_init() == ESP_OK;
 
   String message = Result ? "ESPNow iniciado com sucesso." : "Não foi possível iniciar o ESPNow.";
@@ -201,34 +215,11 @@ void StartEspNow() {
   if (!Result) {ESP.restart();}
 }
 
-void SendDataEspDrone() {
-  esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &package, sizeof(package));
-}
-
-void CalculatePackageValues() {
-  for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {  
-    SetPoints[i] = analogRead(*PT_PINS_XY_JS[i]);
-    SetPoints[i] = constrain(SetPoints[i], minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
-    if (SetPoints[i] <= midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) {
-      SetPoints[i] = map(SetPoints[i], minRangeOfJoystickAxes[i], midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i], MIN_SETPOINTS[i], MID_SETPOINTS[i]);
-    } else if (SetPoints[i] >= midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]) {
-      SetPoints[i] = map(SetPoints[i], midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i], maxRangeOfJoystickAxes[i], MID_SETPOINTS[i], MAX_SETPOINTS[i]);
-    } else {
-      SetPoints[i] = MID_SETPOINTS[i];
-    }
-  }
-}
-
-void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
-  CalculatePackageValues();
-  SendDataEspDrone();
-}
-
-void RegisterFunctionThatExecutesWhenReceivingData(){
+void registerFunctionThatExecutesWhenReceivingData(){
   esp_now_register_send_cb(WhenReceivingResponseDo);
 }
 
-void EstablishConnectionBetweenESPs(){
+void establishConnectionBetweenESPs(){
   printOnDisplay("Configurando Master (Mestre) e Escravos (Slaves)...", true, 500, true);
 
   for (int i = 0; i < AMOUNT_OF_SLAVES; i++) {
@@ -240,6 +231,10 @@ void EstablishConnectionBetweenESPs(){
   }
 }
 
+void sendDataEspDrone() {
+  esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &package, sizeof(package));
+}
+
 void setup() {
   startSerial();
   configDisplay();
@@ -247,11 +242,16 @@ void setup() {
   getRangeOfJoystickAxes();
   getAverageOfJoystickAxes();
   getDeadZonesOfJoystickAxes();
-  StartStationMode();
-  StartEspNow();
-  RegisterFunctionThatExecutesWhenReceivingData();
-  EstablishConnectionBetweenESPs();
-  SendDataEspDrone();
+  startStationMode();
+  startEspNow();
+  registerFunctionThatExecutesWhenReceivingData();
+  establishConnectionBetweenESPs();
+  sendDataEspDrone();
+}
+
+void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+  CalculatePackageValues();
+  sendDataEspDrone();
 }
 
 void loop() {
