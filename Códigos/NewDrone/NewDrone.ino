@@ -22,6 +22,11 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
+template<typename T, int N>
+int getArraySize(T (&array)[N]) {
+  return N;
+}
+
 void startSerial() {
   Serial.begin(115200);
 }
@@ -35,11 +40,6 @@ void StartEspNow() {
   if (!(esp_now_init() == ESP_OK)) {
     ESP.restart();
   }
-}
-
-template<typename T, int N>
-int getArraySize(T (&array)[N]) {
-  return N;
 }
 
 void Settings(){
@@ -106,10 +106,6 @@ void SetupMPU6050() {
   */
 }
 
-void WhenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
-  memcpy(&package, PACKAGE, sizeof(package));
-}
-
 void RegisterFunctionThatExecutesWhenReceivingData(){
   esp_now_register_recv_cb(WhenReceivingDataDo);
 }
@@ -121,6 +117,10 @@ void setup() {
   Settings();
   SetupMPU6050();
   RegisterFunctionThatExecutesWhenReceivingData();
+}
+
+void WhenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
+  memcpy(&package, PACKAGE, sizeof(package));
 }
 
 void loop() {
