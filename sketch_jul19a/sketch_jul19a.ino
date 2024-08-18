@@ -27,10 +27,10 @@ const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantida
 //J1x, J1y, J1z, J2x, J2y, J2z
 const unsigned int PIN_YAW = 35;
 const unsigned int PIN_THROTTLE = 34;
-const unsigned int PIN_J1Z = 25;
-const unsigned int PIN_ROLL = 33;
-const unsigned int PIN_PITCH = 32;
-const unsigned int PIN_J2Z = 26;
+const unsigned int PIN_J1Z = 32;
+const unsigned int PIN_ROLL = 26;
+const unsigned int PIN_PITCH = 25;
+const unsigned int PIN_J2Z = 33;
 
 const unsigned int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
 const int MIN_SETPOINTS[] = {-30, 950, -30, -30};
@@ -51,6 +51,13 @@ struct Package {
 };
 
 Package package = {{4, 7, 5}, 1240, true};
+
+//--------------------------------------|UTILS|--------------------------------------
+bool stop = true;
+int pinJ2ZState = HIGH;            // DEVE SER O VALOR CONSTANTE DO BOTÃO
+int lastPinJ2ZState = pinJ2ZState; 
+unsigned long j2ZLastDebounceTime = 0;  // the last time the output pin was toggled
+const unsigned int J2Z_DEBOUNCE_DELAY = 50; 
 
 void startSerial(){
   Serial.begin(115200);
@@ -88,22 +95,46 @@ void configJoystick(){
   }
 
   pinMode(PIN_J1Z, INPUT_PULLUP);
-  pinMode(PIN_J2Z, INPUT_PULLUP);
+  pinMode(PIN_J2Z, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(PIN_J1Z), invertFlightMode, FALLING);
 }
 
+void resetStop(){
+  stop = true;
+}
+
+void readJ2Z(){
+  int state = digitalRead(PIN_J2Z);
+
+  if (state != lastPinJ2ZState) {
+    j2ZLastDebounceTime = millis();
+  }
+
+  if ((millis() - j2ZLastDebounceTime) > J2Z_DEBOUNCE_DELAY) {
+    if (state != pinJ2ZState) {
+      pinJ2ZState = state;
+      if (pinJ2ZState == HIGH) { stop = !stop;}
+    }
+  }
+
+  lastPinJ2ZState = state;
+}
+
 void stopUntilPressToContinue(String text){
   printOnDisplay(text);
-  
-  while(digitalRead(PIN_J2Z));
-  while(!digitalRead(PIN_J2Z));
+
+  while (stop){
+    readJ2Z();
+  };
 }
 
 void getRangeOfJoystickAxes(){
   printOnDisplay("Mova os joysticks em todas as direções", true, 0, true);
 
   stopUntilPressToContinue("Aperte R3 para prosseguir");
+
+  resetStop();
 
   int value = 0;
 
@@ -121,7 +152,9 @@ void getRangeOfJoystickAxes(){
 
       printOnDisplay(String(*PT_PINS_XY_JS[i]) + ": " + String(minRangeOfJoystickAxes[i]) + " - " + String(maxRangeOfJoystickAxes[i]));
     }
-  }while(digitalRead(PIN_J2Z));
+    
+    readJ2Z();
+  }while(stop);
 }
 
 void getAverageOfJoystickAxes(){
@@ -187,6 +220,7 @@ void CalculatePackageValues() {
 }
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+  CalculatePackageValues();
   SendDataEspDrone();
 }
 
