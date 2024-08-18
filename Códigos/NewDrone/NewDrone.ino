@@ -5,9 +5,9 @@
 
 //----------------------------------|COMUNICATION|-----------------------------------
 struct Package {
-    unsigned int dof[3];
-    unsigned int throttle;
-    volatile bool flightMode;
+  unsigned int dof[3];
+  unsigned int throttle;
+  volatile bool flightMode;
 };
 
 Package package;
@@ -21,7 +21,6 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
-const int MPU6050_ERROR_LED_PIN = 16;
 
 void startSerial() {
   Serial.begin(115200);
@@ -44,7 +43,7 @@ int getArraySize(T (&array)[N]) {
 }
 
 void Settings(){
-  pinMode(MPU6050_ERROR_LED_PIN, OUTPUT);
+  // pinMode(MPU6050_ERROR_LED_PIN, OUTPUT);
   // pinMode(CycleExceededErrorRedLEDPin, OUTPUT);
   // pinMode(FlashingBlueLEDPin, OUTPUT);
   // pinMode(LowBatteryYellowLEDPin, OUTPUT);
@@ -82,10 +81,10 @@ void SetupMPU6050() {
   
   if (Wire.read() != 0x08) {
     while (true) {
-      digitalWrite(MPU6050_ERROR_LED_PIN, LOW);
-      delay(500);
-      digitalWrite(MPU6050_ERROR_LED_PIN, HIGH);
-      delay(500);
+      // digitalWrite(MPU6050_ERROR_LED_PIN, LOW);
+      // delay(500);
+      // digitalWrite(MPU6050_ERROR_LED_PIN, HIGH);
+      // delay(500);
     }
   }
   
