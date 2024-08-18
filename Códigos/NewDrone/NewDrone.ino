@@ -5,9 +5,9 @@
 
 //----------------------------------|COMUNICATION|-----------------------------------
 struct Package {
-    int id;
-    int setpoints[4];
-    int throtle;
+    unsigned int dof[3];
+    unsigned int throttle;
+    volatile bool flightMode;
 };
 
 Package package;
