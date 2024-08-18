@@ -23,6 +23,10 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 #define MPU6050Address 0x68
 const int MPU6050_ERROR_LED_PIN = 16;
 
+void startSerial() {
+  Serial.begin(115200);
+}
+
 void StartStationMode() {
   WiFi.begin();
   WiFi.mode(WIFI_STA);
@@ -112,7 +116,7 @@ void RegisterFunctionThatExecutesWhenReceivingData(){
 }
 
 void setup() {
-  Serial.begin(115200);
+  startSerial();
   StartStationMode();
   StartEspNow();
   Settings();
