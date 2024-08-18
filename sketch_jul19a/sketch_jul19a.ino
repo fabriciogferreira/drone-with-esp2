@@ -52,6 +52,12 @@ struct Package {
 
 Package package = {{4, 7, 5}, 1240, true};
 
+struct DataReceived {
+  char message[100];
+};
+
+DataReceived dataReceived;
+
 //--------------------------------------|UTILS|--------------------------------------
 bool stop = true;
 int pinJ2ZState = HIGH;            // DEVE SER O VALOR CONSTANTE DO BOTÃO
@@ -215,8 +221,12 @@ void startEspNow() {
   if (!Result) {ESP.restart();}
 }
 
-void registerFunctionThatExecutesWhenReceivingData(){
+void registerFunctionThatExecutesWhenReceivingResponse(){
   esp_now_register_send_cb(WhenReceivingResponseDo);
+}
+
+void registerFunctionThatExecutesWhenReceivingData(){
+  esp_now_register_recv_cb(WhenReceivingDataDo);
 }
 
 void establishConnectionBetweenESPs(){
@@ -244,9 +254,13 @@ void setup() {
   getDeadZonesOfJoystickAxes();
   startStationMode();
   startEspNow();
-  registerFunctionThatExecutesWhenReceivingData();
+  registerFunctionThatExecutesWhenReceivingResponse();
   establishConnectionBetweenESPs();
   sendDataEspDrone();
+}
+
+void WhenReceivingDataDo(const esp_now_recv_info_t *macAddr, const uint8_t *droneData, const int dataLen) {
+  memcpy(&dataReceived, droneData, sizeof(dataReceived));
 }
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {

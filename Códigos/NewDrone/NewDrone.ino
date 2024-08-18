@@ -4,15 +4,24 @@
 #include <esp_now.h>
 
 //----------------------------------|COMUNICATION|-----------------------------------
-struct Package {
+struct DataReceived {
   unsigned int dof[3];
   unsigned int throttle;
   volatile bool flightMode;
 };
 
-Package package;
+DataReceived dataReceived;
+
+struct DataSend {
+  char message[100];
+};
+
+DataSend dataSend;
 
 bool isDisconnected = true;
+
+const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
+
 //-------------------------------------|ENGINES|-------------------------------------
 const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
@@ -23,6 +32,10 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
+
+void setTextOnPackageSend(const char* message){
+  strcpy(dataSend.message, message);
+}
 
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
@@ -39,7 +52,7 @@ void startStationMode() {
 }
 
 void startEspNow() {
-  if (!(esp_now_init() == ESP_OK)) {
+  if (esp_now_init() != ESP_OK) {
     ESP.restart();
   }
 }
@@ -59,7 +72,22 @@ void settings(){
 
 void registerFunctionThatExecutesWhenReceivingData(){
   esp_now_register_recv_cb(whenReceivingDataDo);
-  while (isDisconnected);
+  while (isDisconnected) {delayMicroseconds(1);};
+}
+
+void addMasterAsPeerOnEspNow(){
+  esp_now_peer_info_t peerInfo = {};
+  memcpy(peerInfo.peer_addr, MASTER_MAC_ADDRESS, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    ESP.restart();
+  }
+}
+
+void sendData(){
+  esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &dataSend, sizeof(dataSend));
 }
 
 void setupMPU6050() {
@@ -86,13 +114,11 @@ void setupMPU6050() {
   Wire.requestFrom(MPU6050Address, 1);
   while (Wire.available() < 1);
   
-  if (Wire.read() != 0x08) {
-    while (true) {
-      // digitalWrite(MPU6050_ERROR_LED_PIN, LOW);
-      // delay(500);
-      // digitalWrite(MPU6050_ERROR_LED_PIN, HIGH);
-      // delay(500);
-    }
+  // if (Wire.read() != 0x08) {
+  if (true) {
+    setTextOnPackageSend("MPU6050_ERROR");
+    sendData();
+    while (true) {delayMicroseconds(1);};
   }
   
   // Activar y configurar filtro pasa bajos LPF que incorpora el sensor
@@ -119,15 +145,15 @@ void setup() {
   startEspNow();
   settings();
   registerFunctionThatExecutesWhenReceivingData();
-  
-  // setupMPU6050();
+  addMasterAsPeerOnEspNow();
+  setupMPU6050();
 }
 
 void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
   isDisconnected = false;
-  memcpy(&package, PACKAGE, sizeof(package));
+  memcpy(&dataReceived, PACKAGE, sizeof(dataReceived));
 }
 
 void loop() {
-  // Serial.println(package.throttle);
+  // Serial.println(dataReceived.throttle);
 }
