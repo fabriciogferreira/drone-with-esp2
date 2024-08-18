@@ -31,18 +31,18 @@ void startSerial() {
   Serial.begin(115200);
 }
 
-void StartStationMode() {
+void startStationMode() {
   WiFi.begin();
   WiFi.mode(WIFI_STA);
 }
 
-void StartEspNow() {
+void startEspNow() {
   if (!(esp_now_init() == ESP_OK)) {
     ESP.restart();
   }
 }
 
-void Settings(){
+void settings(){
   // pinMode(MPU6050_ERROR_LED_PIN, OUTPUT);
   // pinMode(CycleExceededErrorRedLEDPin, OUTPUT);
   // pinMode(FlashingBlueLEDPin, OUTPUT);
@@ -55,7 +55,7 @@ void Settings(){
   }
 }
 
-void SetupMPU6050() {
+void setupMPU6050() {
   Wire.begin();
 
   Wire.beginTransmission(MPU6050Address);
@@ -106,20 +106,20 @@ void SetupMPU6050() {
   */
 }
 
-void RegisterFunctionThatExecutesWhenReceivingData(){
-  esp_now_register_recv_cb(WhenReceivingDataDo);
+void registerFunctionThatExecutesWhenReceivingData(){
+  esp_now_register_recv_cb(whenReceivingDataDo);
 }
 
 void setup() {
   startSerial();
-  StartStationMode();
-  StartEspNow();
-  Settings();
-  SetupMPU6050();
-  RegisterFunctionThatExecutesWhenReceivingData();
+  startStationMode();
+  startEspNow();
+  settings();
+  setupMPU6050();
+  registerFunctionThatExecutesWhenReceivingData();
 }
 
-void WhenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
+void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
   memcpy(&package, PACKAGE, sizeof(package));
 }
 

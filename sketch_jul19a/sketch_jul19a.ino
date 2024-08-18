@@ -105,7 +105,7 @@ void resetStop(){
   stop = true;
 }
 
-void CalculatePackageValues() {
+void calculatePackageValues() {
   for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {  
     SetPoints[i] = analogRead(*PT_PINS_XY_JS[i]);
     SetPoints[i] = constrain(SetPoints[i], minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
@@ -250,7 +250,7 @@ void setup() {
 }
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
-  CalculatePackageValues();
+  calculatePackageValues();
   sendDataEspDrone();
 }
 
