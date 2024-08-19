@@ -45,9 +45,9 @@ int SetPoints[] = {0, 0, 0, 0};
 
 //----------------------------------|COMUNICATION|-----------------------------------
 struct Package {
-    unsigned int dof[3];
-    unsigned int throttle;
-    volatile bool flightMode;
+  unsigned int dof[3];
+  unsigned int throttle;
+  volatile bool flightMode;
 };
 
 Package package = {{4, 7, 5}, 1240, true};
@@ -255,17 +255,18 @@ void setup() {
   startStationMode();
   startEspNow();
   registerFunctionThatExecutesWhenReceivingResponse();
+  registerFunctionThatExecutesWhenReceivingData();
   establishConnectionBetweenESPs();
   sendDataEspDrone();
-}
-
-void WhenReceivingDataDo(const esp_now_recv_info_t *macAddr, const uint8_t *droneData, const int dataLen) {
-  memcpy(&dataReceived, droneData, sizeof(dataReceived));
 }
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
   calculatePackageValues();
   sendDataEspDrone();
+}
+
+void WhenReceivingDataDo(const esp_now_recv_info_t *macAddr, const uint8_t *droneData, const int dataLen) {
+  memcpy(&dataReceived, droneData, sizeof(dataReceived));
 }
 
 void loop() {
