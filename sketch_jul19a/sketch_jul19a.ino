@@ -53,7 +53,12 @@ struct Package {
 Package package = {{4, 7, 5}, 1240, true};
 
 struct DataReceived {
-  char message[100];
+  enum Errors {
+    NOT_ERROR = 0,
+    MPU6050_ERROR = 1,
+  };
+
+  Errors error;
 };
 
 DataReceived dataReceived;
@@ -122,6 +127,19 @@ void calculatePackageValues() {
     } else {
       SetPoints[i] = MID_SETPOINTS[i];
     }
+  }
+}
+
+void checkDrone(){
+  switch (dataReceived.error) {
+    case DataReceived::MPU6050_ERROR:
+      printOnDisplay("O MMPU6050 apresentou erro", true, 0, true);
+      break;
+    case DataReceived::NOT_ERROR:
+      break;
+    default:
+      printOnDisplay("Erro desconhecido", true, 0, true);
+      break;
   }
 }
 
@@ -262,6 +280,8 @@ void setup() {
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
   calculatePackageValues();
+  // delay(10000);
+  checkDrone();
   sendDataEspDrone();
 }
 

@@ -13,10 +13,15 @@ struct DataReceived {
 DataReceived dataReceived;
 
 struct DataSend {
-  char message[100];
+  enum Errors {
+    NOT_ERROR = 0,
+    MPU6050_ERROR = 1,
+  };
+
+  Errors error;
 };
 
-DataSend dataSend;
+DataSend dataSend = {DataSend::NOT_ERROR};
 
 bool isDisconnected = true;
 
@@ -32,10 +37,6 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
-
-void setTextOnPackageSend(const char* message){
-  strcpy(dataSend.message, message);
-}
 
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
@@ -114,9 +115,8 @@ void setupMPU6050() {
   Wire.requestFrom(MPU6050Address, 1);
   while (Wire.available() < 1);
   
-  // if (Wire.read() != 0x08) {
-  if (true) {
-    setTextOnPackageSend("MPU6050_ERROR");
+  if (Wire.read() != 0x08) {
+    dataSend.error = DataSend::MPU6050_ERROR;
     sendData();
     while (true) {delayMicroseconds(1);};
   }
