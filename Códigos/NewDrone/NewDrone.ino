@@ -117,7 +117,7 @@ void addMasterAsPeerOnEspNow(){
 void sendData(){
   esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &dataSend, sizeof(dataSend));
 }
-
+//CORRETO
 void setupMPU6050() {
   Wire.begin();
 
@@ -165,7 +165,7 @@ void setupMPU6050() {
     5Hz(19ms):0x06
   */
 }
-
+//CORRETO
 void readMPU6050() {
   Wire.beginTransmission(MPU6050Address);
   Wire.write(0x3B);
