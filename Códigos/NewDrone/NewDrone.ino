@@ -3,6 +3,10 @@
 #include <Wire.h>
 #include <esp_now.h>
 
+//--------------------------------------|TIMES|--------------------------------------
+const int SOFTWARE_CYCLE_TIME_IN_US = 6000;
+int cycleStartTime = 0;
+
 //----------------------------------|COMUNICATION|-----------------------------------
 struct DataReceived {
   unsigned int dof[3];
@@ -263,6 +267,18 @@ void processMPU6050Data(){
   }
 }
 
+void manageSoftwareCycle(){
+  if (micros() - cycleStartTime > SOFTWARE_CYCLE_TIME_IN_US + 50) {
+    Serial.println("Passou");
+  }
+
+  while (micros() - cycleStartTime < SOFTWARE_CYCLE_TIME_IN_US) {
+    delayMicroseconds(1);
+  }
+
+  cycleStartTime = micros();
+} 
+
 void setup() {
   startSerial();
   // startStationMode();
@@ -272,6 +288,8 @@ void setup() {
   // addMasterAsPeerOnEspNow();
   setupMPU6050();
   averageAccAndGyr();
+
+  cycleStartTime = micros();
 }
 
 void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
@@ -280,6 +298,7 @@ void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t*
 }
 
 void loop() {
+  manageSoftwareCycle();
   readMPU6050();
   processMPU6050Data();
   // for (int i = 0; i < 7; i++) {
