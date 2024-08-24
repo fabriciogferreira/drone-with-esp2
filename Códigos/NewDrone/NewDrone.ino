@@ -37,7 +37,22 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
+float MPU6050AccX = 0;
+float MPU6050AccY = 0;
+float MPU6050AccZ = 0;
+float Temperature = 0;
+float MPU6050GyrX = 0;
+float MPU6050GyrY = 0;
+float MPU6050GyrZ = 0;
 
+float *PT_MPU6050_ACC_DATA[3] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ};
+float *PT_MPU6050_GYR_DATA[3] = {&MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
+float *PT_MPU6050_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &Temperature, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
+
+float MPU6050_CALIBRATED_ACC_DATA[3] = {0, 0, 0};
+
+bool AccelerometerCalibrateOK = false;
+//-----------------------------------|PREFERENCES|-----------------------------------
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
   return N;
@@ -137,6 +152,35 @@ void setupMPU6050() {
     10Hz(13.8ms):0x05
     5Hz(19ms):0x06
   */
+}
+
+void readMPU6050() {
+  Wire.beginTransmission(MPU6050Address);
+  Wire.write(0x3B);
+  Wire.endTransmission();
+  Wire.requestFrom(MPU6050Address, 14);
+  while (Wire.available() < 14);
+
+  for (int i = 0; i < getArraySize(PT_MPU6050_DATA); i++) {
+    *PT_MPU6050_DATA[i] = Wire.read() << 8 | Wire.read();
+  }
+
+  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
+  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  // 0x41 (TEMP_OUT_H)   & 0x42 (TEMP_OUT_L)
+  // 0x43 (GYRO_XOUT_H)  & 0x44 (GYRO_XOUT_L)
+  // 0x45 (GYRO_YOUT_H)  & 0x46 (GYRO_YOUT_L)
+  // 0x47 (GYRO_ZOUT_H)  & 0x48 (GYRO_ZOUT_L)
+
+  // Restar valores de calibracion del acelerómetro
+  if (AccelerometerCalibrateOK) {
+    for (int i = 0; i< getArraySize(PT_MPU6050_ACC_DATA); i++) {
+      *PT_MPU6050_ACC_DATA[i] = *PT_MPU6050_ACC_DATA[i] - MPU6050_CALIBRATED_ACC_DATA[i];
+    }
+
+    MPU6050AccZ = MPU6050AccZ + 4096;
+  }
 }
 
 void setup() {
