@@ -58,10 +58,27 @@ float MPU6050AccCalZ = 0;
 float MPU6050GyrCalX = 0;
 float MPU6050GyrCalY = 0;
 float MPU6050GyrCalZ = 0;
-
 float *PT_MPU6050_ACC_CAL_DATA[3] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ};
-
+float *PT_MPU6050_GYR_CAL_DATA[3] = {&MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
 float *PT_MPU6050_CAL_DATA[] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ, &MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
+
+
+float angularVelocityGyrX = 0;
+float angularVelocityGyrY = 0;
+float angularVelocityGyrZ = 0;
+float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
+float vectorAcc = 0;
+float pitchAngleAcceleration = 0;
+float rollAngleAcceleration = 0;
+
+
+float yawAngle = 0;
+float rollAngle = 0;
+float pitchAngle = 0;
+float *PT_ANGLES[] = {&yawAngle, &rollAngle, &pitchAngle};
+
+
+bool setGyroAngles = false;
 
 bool isCalibrated = false;
 //-----------------------------------|PREFERENCES|-----------------------------------
@@ -214,13 +231,45 @@ void averageAccAndGyr(){
   isCalibrated = true;
 }
 
+float mpu6050RuntimeInMs = 0;
+float angleCalculationTimeInUs = 0;
+void processMPU6050Data(){
+  for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR); i++) {
+    *PT_GYRO_VELOCITY_ANGULAR[i] = (*PT_MPU6050_GYR_DATA[i] - *PT_MPU6050_GYR_CAL_DATA[i]) / 65.5;
+  }
+
+  mpu6050RuntimeInMs = (micros() - angleCalculationTimeInUs) / 1000;
+
+  pitchAngle = pitchAngle + angularVelocityGyrX * mpu6050RuntimeInMs / 1000;
+  rollAngle = rollAngle + angularVelocityGyrY * mpu6050RuntimeInMs / 1000;
+
+  pitchAngle = pitchAngle + rollAngle * sin((MPU6050GyrZ - MPU6050GyrCalZ) * mpu6050RuntimeInMs * 0.000000266);
+  rollAngle = rollAngle - pitchAngle * sin((MPU6050GyrZ - MPU6050GyrCalZ) * mpu6050RuntimeInMs * 0.000000266);
+
+  angleCalculationTimeInUs = micros();
+
+  vectorAcc = sqrt(pow(MPU6050AccX, 2) + pow(MPU6050AccY, 2) + pow(MPU6050AccZ, 2));
+  pitchAngleAcceleration = asin(MPU6050AccY / vectorAcc) * 57.2958;
+  rollAngleAcceleration = asin(MPU6050AccX / vectorAcc) * -57.2958;
+
+  if (setGyroAngles) {
+    pitchAngle = pitchAngle * 0.995 + pitchAngleAcceleration * 0.005;
+    rollAngle = rollAngle * 0.995 + rollAngleAcceleration * 0.005;
+  }else{
+    pitchAngle = pitchAngleAcceleration;
+    rollAngle = rollAngleAcceleration;
+
+    setGyroAngles = true;
+  }
+}
+
 void setup() {
   startSerial();
-  startStationMode();
-  startEspNow();
-  settings();
-  registerFunctionThatExecutesWhenReceivingData();
-  addMasterAsPeerOnEspNow();
+  // startStationMode();
+  // startEspNow();
+  // settings();
+  // registerFunctionThatExecutesWhenReceivingData();
+  // addMasterAsPeerOnEspNow();
   setupMPU6050();
   averageAccAndGyr();
 }
@@ -232,13 +281,14 @@ void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t*
 
 void loop() {
   readMPU6050();
-  for (int i = 0; i < 7; i++) {
-    Serial.print(*PT_MPU6050_DATA[i]);
-    Serial.print('\t');
-  }
-  // for (int i = 0; i < 6; i++) {
-  //   Serial.print(*PT_MPU6050_CAL_DATA[i]);
+  processMPU6050Data();
+  // for (int i = 0; i < 7; i++) {
+  //   Serial.print(*PT_MPU6050_DATA[i]);
   //   Serial.print('\t');
   // }
+  for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
+    Serial.print(*PT_ANGLES[i]);
+    Serial.print('\t');
+  }
   Serial.println();
 }
