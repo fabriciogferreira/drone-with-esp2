@@ -38,6 +38,7 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
+
 float MPU6050AccX = 0;
 float MPU6050AccY = 0;
 float MPU6050AccZ = 0;
@@ -45,11 +46,9 @@ float Temperature = 0;
 float MPU6050GyrX = 0;
 float MPU6050GyrY = 0;
 float MPU6050GyrZ = 0;
-
 float *PT_MPU6050_ACC_DATA[3] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ};
 float *PT_MPU6050_GYR_DATA[3] = {&MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 float *PT_MPU6050_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &Temperature, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
-
 float *PT_MPU6050_ACC_AND_GYR_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 
 
