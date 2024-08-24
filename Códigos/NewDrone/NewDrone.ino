@@ -37,6 +37,7 @@ const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
+
 float MPU6050AccX = 0;
 float MPU6050AccY = 0;
 float MPU6050AccZ = 0;
@@ -49,9 +50,21 @@ float *PT_MPU6050_ACC_DATA[3] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ};
 float *PT_MPU6050_GYR_DATA[3] = {&MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 float *PT_MPU6050_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &Temperature, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 
-float MPU6050_CALIBRATED_ACC_DATA[3] = {0, 0, 0};
+float *PT_MPU6050_ACC_AND_GYR_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 
-bool AccelerometerCalibrateOK = false;
+
+float MPU6050AccCalX = 0;
+float MPU6050AccCalY = 0;
+float MPU6050AccCalZ = 0;
+float MPU6050GyrCalX = 0;
+float MPU6050GyrCalY = 0;
+float MPU6050GyrCalZ = 0;
+
+float *PT_MPU6050_ACC_CAL_DATA[3] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ};
+
+float *PT_MPU6050_CAL_DATA[] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ, &MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
+
+bool isCalibrated = false;
 //-----------------------------------|PREFERENCES|-----------------------------------
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
@@ -174,13 +187,32 @@ void readMPU6050() {
   // 0x47 (GYRO_ZOUT_H)  & 0x48 (GYRO_ZOUT_L)
 
   // Restar valores de calibracion del acelerómetro
-  if (AccelerometerCalibrateOK) {
+  if (isCalibrated) {
     for (int i = 0; i< getArraySize(PT_MPU6050_ACC_DATA); i++) {
-      *PT_MPU6050_ACC_DATA[i] = *PT_MPU6050_ACC_DATA[i] - MPU6050_CALIBRATED_ACC_DATA[i];
+      *PT_MPU6050_ACC_DATA[i] = *PT_MPU6050_ACC_DATA[i] - *PT_MPU6050_ACC_CAL_DATA[i];
     }
 
     MPU6050AccZ = MPU6050AccZ + 4096;
   }
+}
+
+void averageAccAndGyr(){
+  int n = 3000;
+  for (int i = 0; i < n; i++) {
+    readMPU6050();
+
+    for (int j = 0; j < getArraySize(PT_MPU6050_ACC_AND_GYR_DATA); j++) {
+      *PT_MPU6050_CAL_DATA[j] = *PT_MPU6050_CAL_DATA[j] + *PT_MPU6050_ACC_AND_GYR_DATA[j];
+    }
+
+    delayMicroseconds(20);
+  }
+
+  for (int i = 0; i < getArraySize(PT_MPU6050_CAL_DATA); i++) {
+    *PT_MPU6050_CAL_DATA[i] = *PT_MPU6050_CAL_DATA[i] / n;
+  }
+
+  isCalibrated = true;
 }
 
 void setup() {
@@ -191,6 +223,7 @@ void setup() {
   registerFunctionThatExecutesWhenReceivingData();
   addMasterAsPeerOnEspNow();
   setupMPU6050();
+  averageAccAndGyr();
 }
 
 void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
@@ -199,5 +232,14 @@ void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t*
 }
 
 void loop() {
-  // Serial.println(dataReceived.throttle);
+  readMPU6050();
+  for (int i = 0; i < 7; i++) {
+    Serial.print(*PT_MPU6050_DATA[i]);
+    Serial.print('\t');
+  }
+  // for (int i = 0; i < 6; i++) {
+  //   Serial.print(*PT_MPU6050_CAL_DATA[i]);
+  //   Serial.print('\t');
+  // }
+  Serial.println();
 }
