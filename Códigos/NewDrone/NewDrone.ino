@@ -30,6 +30,13 @@ DataSend dataSend = {DataSend::NOT_ERROR};
 bool isDisconnected = true;
 
 const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
+//-------------------------------------|ENGINES|-------------------------------------
+int rcYawAngle = 0;
+int rcThrotle = 0;
+int rcRollAngle = 0;
+int rcPitchAngle = 0;
+int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
+int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
 
 //-------------------------------------|ENGINES|-------------------------------------
 const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
