@@ -78,6 +78,7 @@ float angularVelocityGyrX = 0;
 float angularVelocityGyrY = 0;
 float angularVelocityGyrZ = 0;
 float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
+float PT_GYRO_VELOCITY_ANGULAR_ANT[] = {0, 0, 0};
 float vectorAcc = 0;
 float pitchAngleAcceleration = 0;
 float rollAngleAcceleration = 0;
@@ -109,7 +110,18 @@ float rollAndPitchPIDAngleAdjustment[2][3] = {
   {0.5, 0.05, 10}, //Pitch
 };
 
-float rollAndPitchPidAngleKi[2] = {0, 0}; // yaw, roll, pitch
+float pidAngularVelocityAdjustments[3][3] ={
+  {2, 0.02, 0},//yaw
+  {2, 0.02, 0},//roll
+  {1, 0.05, 0},//pitch
+};
+
+float Pitch_W_Kp   = 2,   Pitch_W_Ki   = 0.02, Pitch_W_Kd   = 0;
+float Roll_W_Kp    = 2,   Roll_W_Ki    = 0.02, Roll_W_Kd    = 0;
+float Yaw_W_Kp     = 1,   Yaw_W_Ki     = 0.05, Yaw_W_Kd     = 0;
+
+float pidVelocityAngularKi[] = {0, 0, 0};//yaw, roll, pitch
+float rollAndPitchPidAngleKi[2] = {0, 0}; //roll, pitch
 
 float yawPidAngleOutput = 0;
 float rollPidAngleOutput = 0;
@@ -117,13 +129,39 @@ float pitchPidAngleOutput = 0;
 float *PT_PID_ANGLE_OUTPUT[] = {&yawPidAngleOutput, &rollPidAngleOutput, &pitchPidAngleOutput};
 float *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[] = {&rollPidAngleOutput, &pitchPidAngleOutput};
 
+float PT_PID_VELOCITY_ANGULAR_OUTPUT[] = {0,0,0};
 
 int pidAngleIntegralError = 130;
-
+int pidVelocityAngularIntegralError = 380;
 
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
   return N;
+}
+
+void pidVelocityAngular(){
+  float angularVelocityPidAngle = 0;
+  float error = 0, kp = 0, kd;
+
+  for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
+    if (i == 0) {
+      angularVelocityPidAngle = rcYawAngle;
+    }else{
+      angularVelocityPidAngle = flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
+    }
+    error = angularVelocityPidAngle + *PT_GYRO_VELOCITY_ANGULAR[i];
+
+    kp = pidAngularVelocityAdjustments[i][0] * error;
+
+    pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + (pidAngularVelocityAdjustments[i][1] * error);
+    pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
+      
+    kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
+      
+    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
+
+    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = constrain(PT_PID_VELOCITY_ANGULAR_OUTPUT[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
+  }
 }
 
 void pidAngle(){
@@ -369,6 +407,7 @@ void loop() {
   readMPU6050();
   processMPU6050Data();
   if (flightMode) pidAngle();
+  pidVelocityAngular();
 
   // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
   //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
