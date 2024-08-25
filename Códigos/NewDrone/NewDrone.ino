@@ -292,9 +292,20 @@ void setup() {
   cycleStartTime = micros();
 }
 
+void processRCData(){
+  rcThrotle = dataReceived.throttle;
+
+  flightMode = dataReceived.flightMode;
+  
+  for (int i = 0; i < getArraySize(dataReceived.dof); i++) {
+    *PT_RC_ANGLES[i] = dataReceived.dof[i];
+  }
+}
+
 void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
   isDisconnected = false;
   memcpy(&dataReceived, PACKAGE, sizeof(dataReceived));
+  processRCData();
 }
 
 void loop() {
