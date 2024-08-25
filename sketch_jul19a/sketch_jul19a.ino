@@ -117,15 +117,16 @@ void resetStop(){
 }
 
 void calculatePackageValues() {
+  int value = 0;
   for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {  
-    SetPoints[i] = analogRead(*PT_PINS_XY_JS[i]);
-    SetPoints[i] = constrain(SetPoints[i], minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
-    if (SetPoints[i] <= midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) {
-      SetPoints[i] = map(SetPoints[i], minRangeOfJoystickAxes[i], midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i], MIN_SETPOINTS[i], MID_SETPOINTS[i]);
-    } else if (SetPoints[i] >= midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]) {
-      SetPoints[i] = map(SetPoints[i], midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i], maxRangeOfJoystickAxes[i], MID_SETPOINTS[i], MAX_SETPOINTS[i]);
+    value = analogRead(*PT_PINS_XY_JS[i]);
+    value = constrain(value, minRangeOfJoystickAxes[i], maxRangeOfJoystickAxes[i]);
+    if (value <= midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i]) {
+      *SetPoints[i] = map(value, minRangeOfJoystickAxes[i], midRangeOfJoystickAxes[i] - joystickAxisDeadZones[i], MIN_SETPOINTS[i], MID_SETPOINTS[i]);
+    } else if (value >= midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i]) {
+      *SetPoints[i] = map(value, midRangeOfJoystickAxes[i] + joystickAxisDeadZones[i], maxRangeOfJoystickAxes[i], MID_SETPOINTS[i], MAX_SETPOINTS[i]);
     } else {
-      SetPoints[i] = MID_SETPOINTS[i];
+      *SetPoints[i] = MID_SETPOINTS[i];
     }
   }
 }
