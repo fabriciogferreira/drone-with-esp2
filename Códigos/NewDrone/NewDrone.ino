@@ -425,14 +425,21 @@ void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t*
   processRCData();
 }
 
+void prepareForNewCycle(){
+  for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR_ANT); i++) {
+    *lastAngles[i] = *PT_ANGLES[i];
+    PT_GYRO_VELOCITY_ANGULAR_ANT[i] = *PT_GYRO_VELOCITY_ANGULAR[i];
+  }
+}
+
 void loop() {
   manageSoftwareCycle();
   readMPU6050();
   processMPU6050Data();
   if (flightMode) pidAngle();
   pidVelocityAngular();
-  modulator()
-
+  modulator();
+  prepareForNewCycle();
   // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
   //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
   //   Serial.print('\t');
