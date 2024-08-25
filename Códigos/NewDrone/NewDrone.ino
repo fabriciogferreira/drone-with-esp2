@@ -87,6 +87,14 @@ float yawAngle = 0;
 float rollAngle = 0;
 float pitchAngle = 0;
 float *PT_ANGLES[] = {&yawAngle, &rollAngle, &pitchAngle};
+float *PT_ROLL_AND_PITCH_ANGLES[] = {&rollAngle, &pitchAngle};
+
+
+float lastYawAngle = 0;
+float lastRollAngle = 0;
+float lastPitchAngle = 0;
+float *lastAngles[] = {&lastYawAngle, &lastRollAngle, &lastPitchAngle};
+float *PT_LAST_ROLL_AND_PITCH_ANGLE[] = {&lastRollAngle, &lastPitchAngle};
 
 
 bool setGyroAngles = false;
