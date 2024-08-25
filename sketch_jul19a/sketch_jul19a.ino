@@ -27,10 +27,10 @@ const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantida
 //J1x, J1y, J1z, J2x, J2y, J2z
 const unsigned int PIN_YAW = 35;
 const unsigned int PIN_THROTTLE = 34;
-const unsigned int PIN_J1Z = 32;
-const unsigned int PIN_ROLL = 26;
-const unsigned int PIN_PITCH = 25;
-const unsigned int PIN_J2Z = 33;
+const unsigned int PIN_J1Z = 25;
+const unsigned int PIN_ROLL = 33;
+const unsigned int PIN_PITCH = 32;
+const unsigned int PIN_J2Z = 26;
 
 const unsigned int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
 const int MIN_SETPOINTS[] = {-30, 950, -30, -30};
