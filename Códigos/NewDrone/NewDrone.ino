@@ -38,6 +38,8 @@ int rcPitchAngle = 0;
 int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
 int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
 
+float engineStartTime = 0;
+bool anyEngineOn;
 //-------------------------------------|ENGINES|-------------------------------------
 const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
@@ -432,6 +434,24 @@ void prepareForNewCycle(){
   }
 }
 
+void emitPWMSignal(){
+  for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
+    digitalWrite(MOTOR_PINS[i], HIGH);
+  }
+
+  engineStartTime = micros();
+
+  do {
+    anyEngineOn = false;
+
+    for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
+      if (engineStartTime + pwmSignalInUs[i] <= micros()) digitalWrite(MOTOR_PINS[i], LOW);
+      
+      if (digitalRead(MOTOR_PINS[i]) == HIGH) anyEngineOn = true;
+    }
+  } while (anyEngineOn);
+}
+
 void loop() {
   manageSoftwareCycle();
   readMPU6050();
@@ -440,6 +460,7 @@ void loop() {
   pidVelocityAngular();
   modulator();
   prepareForNewCycle();
+  emitPWMSignal();
   // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
   //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
   //   Serial.print('\t');
