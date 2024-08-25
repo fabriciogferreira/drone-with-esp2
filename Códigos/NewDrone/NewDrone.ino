@@ -281,11 +281,11 @@ void manageSoftwareCycle(){
 
 void setup() {
   startSerial();
-  // startStationMode();
-  // startEspNow();
-  // settings();
-  // registerFunctionThatExecutesWhenReceivingData();
-  // addMasterAsPeerOnEspNow();
+  startStationMode();
+  startEspNow();
+  settings();
+  registerFunctionThatExecutesWhenReceivingData();
+  addMasterAsPeerOnEspNow();
   setupMPU6050();
   averageAccAndGyr();
 
