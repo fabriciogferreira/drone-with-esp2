@@ -103,9 +103,48 @@ bool isCalibrated = false;
 //-----------------------------------|PREFERENCES|-----------------------------------
 bool flightMode = true;
 
+//---------------------------------------|PID|---------------------------------------
+float rollAndPitchPIDAngleAdjustment[2][3] = {
+  {0.5, 0.05, 10}, //ROLL
+  {0.5, 0.05, 10}, //Pitch
+};
+
+float rollAndPitchPidAngleKi[2] = {0, 0}; // yaw, roll, pitch
+
+float yawPidAngleOutput = 0;
+float rollPidAngleOutput = 0;
+float pitchPidAngleOutput = 0;
+float *PT_PID_ANGLE_OUTPUT[] = {&yawPidAngleOutput, &rollPidAngleOutput, &pitchPidAngleOutput};
+float *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[] = {&rollPidAngleOutput, &pitchPidAngleOutput};
+
+
+int pidAngleIntegralError = 130;
+
+
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
   return N;
+}
+
+void pidAngle(){
+  float error = 0;
+  float kp = 0;
+  float kd = 0;
+
+  for (int i = 0; i < getArraySize(PT_RC_ROLL_AND_PITCH_ANGLES); i++) {
+    error = *PT_RC_ROLL_AND_PITCH_ANGLES[i] - *PT_ROLL_AND_PITCH_ANGLES[i];
+
+    kp = rollAndPitchPIDAngleAdjustment[i][0] * error;
+
+    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] + (rollAndPitchPIDAngleAdjustment[i][1] * error);
+    rollAndPitchPidAngleKi[i] = constrain(rollAndPitchPidAngleKi[i], -pidAngleIntegralError, pidAngleIntegralError);
+    
+    kd = rollAndPitchPIDAngleAdjustment[i][2] * (*PT_ROLL_AND_PITCH_ANGLES[i] - *PT_LAST_ROLL_AND_PITCH_ANGLE[i]);
+
+    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = kp + rollAndPitchPidAngleKi[i] + kd;
+
+    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = constrain(*PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i], -pidAngleIntegralError, pidAngleIntegralError);
+  }
 }
 
 void startSerial() {
@@ -329,13 +368,15 @@ void loop() {
   manageSoftwareCycle();
   readMPU6050();
   processMPU6050Data();
-  // for (int i = 0; i < 7; i++) {
-  //   Serial.print(*PT_MPU6050_DATA[i]);
+  if (flightMode) pidAngle();
+
+  // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
+  //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
   //   Serial.print('\t');
   // }
-  for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
-    Serial.print(*PT_ANGLES[i]);
-    Serial.print('\t');
-  }
-  Serial.println();
+  // for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
+  //   Serial.print(*PT_ANGLES[i]);
+  //   Serial.print('\t');
+  // }
+  // Serial.println();
 }
