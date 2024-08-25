@@ -360,15 +360,15 @@ void processMPU6050Data(){
 }
 
 void modulator(){
-  if (rcThrotle) <= 1300 {
+  if (rcThrotle <= 1300) {
     for(int i = 0; i < getArraySize(pwmSignalInUs); i++){
       pwmSignalInUs[i] = rcThrotle;
       if(pwmSignalInUs[i] < 1000) pwmSignalInUs[i] = 950;
     }
 
-    for(int i = 0; i < getArraySize(pidVelocityAngularKi); i++) pidVelocityAngularKi = 0;
+    for(int i = 0; i < getArraySize(pidVelocityAngularKi); i++) pidVelocityAngularKi[i] = 0;
 
-    for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi = 0;
+    for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi[i] = 0;
   } else {
     if(rcThrotle > 1800) rcThrotle = 1800;
     
