@@ -46,6 +46,8 @@ const int RESOLUTION = 9; //0-4095 == 4096
 const int FREQUENCY = 50;
 const int MIN_SPEED = 205;//pow(2, RESOLUTION)
 
+float pwmSignalInUs[] = {0, 0, 0, 0};
+
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
@@ -357,6 +359,31 @@ void processMPU6050Data(){
   }
 }
 
+void modulator(){
+  if (rcThrotle) <= 1300 {
+    for(int i = 0; i < getArraySize(pwmSignalInUs); i++){
+      pwmSignalInUs[i] = rcThrotle;
+      if(pwmSignalInUs[i] < 1000) pwmSignalInUs[i] = 950;
+    }
+
+    for(int i = 0; i < getArraySize(pidVelocityAngularKi); i++) pidVelocityAngularKi = 0;
+
+    for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi = 0;
+  } else {
+    if(rcThrotle > 1800) rcThrotle = 1800;
+    
+    pwmSignalInUs[0] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    pwmSignalInUs[1] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    pwmSignalInUs[2] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    pwmSignalInUs[3] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+
+    for(int i = 0; i < getArraySize(pwmSignalInUs); i++){
+      if(pwmSignalInUs[i] < 1100) pwmSignalInUs[i] = 1100;
+      if(pwmSignalInUs[i] > 2000) pwmSignalInUs[i] = 2000;
+    }
+  }
+}
+
 void manageSoftwareCycle(){
   if (micros() - cycleStartTime > SOFTWARE_CYCLE_TIME_IN_US + 50) {
     Serial.println("Passou");
@@ -404,6 +431,7 @@ void loop() {
   processMPU6050Data();
   if (flightMode) pidAngle();
   pidVelocityAngular();
+  modulator()
 
   // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
   //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
