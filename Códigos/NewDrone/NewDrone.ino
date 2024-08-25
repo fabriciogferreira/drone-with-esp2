@@ -116,10 +116,6 @@ float pidAngularVelocityAdjustments[3][3] ={
   {1, 0.05, 0},//pitch
 };
 
-float Pitch_W_Kp   = 2,   Pitch_W_Ki   = 0.02, Pitch_W_Kd   = 0;
-float Roll_W_Kp    = 2,   Roll_W_Ki    = 0.02, Roll_W_Kd    = 0;
-float Yaw_W_Kp     = 1,   Yaw_W_Ki     = 0.05, Yaw_W_Kd     = 0;
-
 float pidVelocityAngularKi[] = {0, 0, 0};//yaw, roll, pitch
 float rollAndPitchPidAngleKi[2] = {0, 0}; //roll, pitch
 
