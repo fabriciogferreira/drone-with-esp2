@@ -280,7 +280,7 @@ void setup() {
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
   calculatePackageValues();
-  // delay(10000);
+  // delay(1000);
   checkDrone();
   sendDataEspDrone();
 }
