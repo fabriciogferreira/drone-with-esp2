@@ -22,6 +22,27 @@ const uint8_t SLAVES_MAC_ADDRESS[][6] = {
 const unsigned int CHANNEL = 1;  //Canal do slave
 const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
 
+//----------------------------------|COMUNICATION|-----------------------------------
+struct Package {
+  int dof[3];
+  int throttle;
+  volatile bool flightMode;
+};
+
+Package package = {{0, 0, 0}, 0, true};
+
+
+struct DataReceived {
+  enum Errors {
+    NOT_ERROR = 0,
+    MPU6050_ERROR = 1,
+  };
+
+  Errors error;
+};
+
+DataReceived dataReceived;
+
 //-------------------------------------|CONTROL|-------------------------------------
 //DOF = Degrees Of Freedom
 //J1x, J1y, J1z, J2x, J2y, J2z
@@ -41,27 +62,8 @@ unsigned int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
 const unsigned int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
 unsigned int joystickAxisDeadZones[] = {0, 0, 0, 0};
-int SetPoints[] = {0, 0, 0, 0};
 
-//----------------------------------|COMUNICATION|-----------------------------------
-struct Package {
-  unsigned int dof[3];
-  unsigned int throttle;
-  volatile bool flightMode;
-};
-
-Package package = {{4, 7, 5}, 1240, true};
-
-struct DataReceived {
-  enum Errors {
-    NOT_ERROR = 0,
-    MPU6050_ERROR = 1,
-  };
-
-  Errors error;
-};
-
-DataReceived dataReceived;
+int *SetPoints[] = {&package.dof[0], &package.throttle, &package.dof[1], &package.dof[2]};
 
 //--------------------------------------|UTILS|--------------------------------------
 bool stop = true;
