@@ -101,7 +101,7 @@ bool setGyroAngles = false;
 
 bool isCalibrated = false;
 //-----------------------------------|PREFERENCES|-----------------------------------
-bool flightMode = false;]
+bool flightMode = true;
 
 template<typename T, int N>
 int getArraySize(T (&array)[N]) {
