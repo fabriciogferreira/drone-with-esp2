@@ -11,7 +11,7 @@ int cycleStartTime = 0;
 struct DataReceived {
   unsigned int dof[3];
   unsigned int throttle;
-  volatile bool flightMode;
+  bool flightMode;
 };
 
 DataReceived dataReceived;
