@@ -237,6 +237,7 @@ void setupMPU6050() {
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
   
+  /*
   Wire.beginTransmission(MPU6050Address);
   Wire.write(0x6B);                                                          //Registro 6B hex)
   Wire.write(0x00);                                                          //00000000 para activar giroscopio
@@ -270,7 +271,6 @@ void setupMPU6050() {
   Wire.write(0x04);
   Wire.endTransmission();
 
-  /*
     Frecuencia de corte del filtro pasa bajos:
     256Hz(0ms):0x00
     188Hz(2ms):0x01
