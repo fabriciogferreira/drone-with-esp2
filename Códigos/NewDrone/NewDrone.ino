@@ -152,17 +152,17 @@ void pidVelocityAngular(){
     }else{
       angularVelocityPidAngle = flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
     }
-    error = angularVelocityPidAngle + *PT_GYRO_VELOCITY_ANGULAR[i];
+
+    error = angularVelocityPidAngle - *PT_GYRO_VELOCITY_ANGULAR[i];
 
     kp = pidAngularVelocityAdjustments[i][0] * error;
 
     pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + (pidAngularVelocityAdjustments[i][1] * error);
     pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
-      
+    
     kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
-      
-    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
 
+    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
     PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = constrain(PT_PID_VELOCITY_ANGULAR_OUTPUT[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
   }
 }
@@ -183,7 +183,6 @@ void pidAngle(){
     kd = rollAndPitchPIDAngleAdjustment[i][2] * (*PT_ROLL_AND_PITCH_ANGLES[i] - *PT_LAST_ROLL_AND_PITCH_ANGLE[i]);
 
     *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = kp + rollAndPitchPidAngleKi[i] + kd;
-
     *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = constrain(*PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i], -pidAngleIntegralError, pidAngleIntegralError);
   }
 }
@@ -419,7 +418,7 @@ void setup() {
 }
 
 void processRCData(){
-  rcThrotle = dataReceived.throttle;
+  rcThrotle = dataReceived.throttle > 1800 ? 1800 : dataReceived.throttle;
 
   flightMode = dataReceived.flightMode;
   
