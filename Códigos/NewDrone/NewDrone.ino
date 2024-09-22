@@ -41,7 +41,8 @@ int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
 float engineStartTime = 0;
 bool anyEngineOn;
 //-------------------------------------|ENGINES|-------------------------------------
-const int MOTOR_PINS[4] = {14, 18, 19, 26}; //não usar do 6 ao 11
+// Motor 1, 2, 3, 4
+const int MOTOR_PINS[4] = {26, 14, 18, 19}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
 
 const int RESOLUTION = 9; //0-4095 == 4096
