@@ -461,20 +461,11 @@ void emitPWMSignal(){
 
 void loop() {
   manageSoftwareCycle();
+  emitPWMSignal();
   readMPU6050();
   processMPU6050Data();
   if (flightMode) pidAngle();
   pidVelocityAngular();
   modulator();
   prepareForNewCycle();
-  emitPWMSignal();
-  // for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
-  //   Serial.print(*PT_PID_ANGLE_OUTPUT[i]);
-  //   Serial.print('\t');
-  // }
-  // for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
-  //   Serial.print(*PT_ANGLES[i]);
-  //   Serial.print('\t');
-  // }
-  // Serial.println();
 }
