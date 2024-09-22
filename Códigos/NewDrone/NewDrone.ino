@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <esp_now.h>
+#include <MPU6050_tockn.h>
 
 //--------------------------------------|TIMES|--------------------------------------
 const int SOFTWARE_CYCLE_TIME_IN_US = 6000;
@@ -54,6 +55,7 @@ float pwmSignalInUs[] = {0, 0, 0, 0};
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
+MPU6050 mpu6050(Wire);
 
 float MPU6050AccX = 0;
 float MPU6050AccY = 0;
@@ -228,10 +230,13 @@ void addMasterAsPeerOnEspNow(){
 void sendData(){
   esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &dataSend, sizeof(dataSend));
 }
-//CORRETO
+
 void setupMPU6050() {
   Wire.begin();
 
+  mpu6050.begin();
+  mpu6050.calcGyroOffsets(true);
+  
   Wire.beginTransmission(MPU6050Address);
   Wire.write(0x6B);                                                          //Registro 6B hex)
   Wire.write(0x00);                                                          //00000000 para activar giroscopio
@@ -328,9 +333,13 @@ void averageAccAndGyr(){
 float mpu6050RuntimeInMs = 0;
 float angleCalculationTimeInUs = 0;
 void processMPU6050Data(){
-  for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR); i++) {
-    *PT_GYRO_VELOCITY_ANGULAR[i] = (*PT_MPU6050_GYR_DATA[i] - *PT_MPU6050_GYR_CAL_DATA[i]) / 65.5;
-  }
+  // for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR); i++) {
+  //   *PT_GYRO_VELOCITY_ANGULAR[i] = (*PT_MPU6050_GYR_DATA[i] - *PT_MPU6050_GYR_CAL_DATA[i]) / 65.5;
+  // }
+
+  *PT_GYRO_VELOCITY_ANGULAR[0] = mpu6050.getGyroX();
+  *PT_GYRO_VELOCITY_ANGULAR[1] = mpu6050.getGyroZ();
+  *PT_GYRO_VELOCITY_ANGULAR[2] = mpu6050.getGyroY();
 
   mpu6050RuntimeInMs = (micros() - angleCalculationTimeInUs) / 1000;
 
@@ -346,9 +355,11 @@ void processMPU6050Data(){
   pitchAngleAcceleration = asin(MPU6050AccY / vectorAcc) * 57.2958;
   rollAngleAcceleration = asin(MPU6050AccX / vectorAcc) * -57.2958;
 
+  mpu6050.update();
+
   if (setGyroAngles) {
-    pitchAngle = pitchAngle * 0.995 + pitchAngleAcceleration * 0.005;
-    rollAngle = rollAngle * 0.995 + rollAngleAcceleration * 0.005;
+    pitchAngle = mpu6050.getAngleX() * 0.995 + pitchAngleAcceleration * 0.005;
+    rollAngle = mpu6050.getAngleY() * 0.995 + rollAngleAcceleration * 0.005;
   }else{
     pitchAngle = pitchAngleAcceleration;
     rollAngle = rollAngleAcceleration;
