@@ -48,7 +48,11 @@ const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ES
 
 const int RESOLUTION = 9; //0-4095 == 4096
 const int FREQUENCY = 50;
-const int MIN_SPEED = 205;//pow(2, RESOLUTION)
+
+const unsigned int MIN_SPEED = 205;
+const unsigned int MAX_SPEED = 410;
+const unsigned int SPEED_PIN = 34;
+unsigned int speed = 0;
 
 float pwmSignalInUs[] = {0, 0, 0, 0};
 
@@ -206,7 +210,7 @@ void settings(){
   for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
     pinMode(MOTOR_PINS[i], OUTPUT);
     ledcAttachChannel(MOTOR_PINS[i], FREQUENCY, RESOLUTION, CHANNELS[i]);
-    ledcWrite(MOTOR_PINS[i], MIN_SPEED);    
+    ledcWrite(MOTOR_PINS[i], 0);    
   }
 }
 
@@ -458,6 +462,10 @@ void emitPWMSignal(){
   } while (anyEngineOn);
 }
 
+void readSpeed(){
+  speed = map(analogRead(SPEED_PIN), 0, 4095, MIN_SPEED, MAX_SPEED);
+}
+
 void loop() {
   manageSoftwareCycle();
   emitPWMSignal();
@@ -467,4 +475,5 @@ void loop() {
   pidVelocityAngular();
   modulator();
   prepareForNewCycle();
+  readSpeed();
 }
