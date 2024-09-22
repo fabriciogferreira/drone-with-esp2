@@ -201,11 +201,6 @@ void startEspNow() {
 }
 
 void settings(){
-  // pinMode(MPU6050_ERROR_LED_PIN, OUTPUT);
-  // pinMode(CycleExceededErrorRedLEDPin, OUTPUT);
-  // pinMode(FlashingBlueLEDPin, OUTPUT);
-  // pinMode(LowBatteryYellowLEDPin, OUTPUT);
-
   for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
     pinMode(MOTOR_PINS[i], OUTPUT);
     ledcAttachChannel(MOTOR_PINS[i], FREQUENCY, RESOLUTION, CHANNELS[i]);
