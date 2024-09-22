@@ -54,9 +54,9 @@ const unsigned int PIN_PITCH = 32;
 const unsigned int PIN_J2Z = 26;
 
 const unsigned int *PT_PINS_XY_JS[] = {&PIN_YAW, &PIN_THROTTLE, &PIN_ROLL, &PIN_PITCH};
-const int MIN_SETPOINTS[] = {-30, 950, -30, -30};
+const int MIN_SETPOINTS[] = {-30, 950, -30, 30};
 const int MID_SETPOINTS[] = {0, 1525, 0, 0};
-const int MAX_SETPOINTS[] = {30, 2000, 30, 30};
+const int MAX_SETPOINTS[] = {30, 1800, 30, -30};
 unsigned int maxRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int midRangeOfJoystickAxes[] = {0, 0, 0, 0};
 unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX};
