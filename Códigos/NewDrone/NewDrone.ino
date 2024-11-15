@@ -46,13 +46,13 @@ bool anyEngineOn;
 const int MOTOR_PINS[4] = {26, 14, 18, 19}; //não usar do 6 ao 11
 const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
 
-const int RESOLUTION = 9; //0-4095 == 4096
-const int FREQUENCY = 50;
+const int RESOLUTION = 8; //0-4095 == 4096
+const int FREQUENCY = 50000;
 
-const unsigned int MIN_SPEED = 205;
-const unsigned int MAX_SPEED = 410;
+const unsigned int MIN_SPEED = 0;
+const unsigned int MAX_SPEED = 255;
 const unsigned int SPEED_PIN = 34;
-unsigned int speed = 0;
+unsigned int speed = MIN_SPEED;
 
 float pwmSignalInUs[] = {0, 0, 0, 0};
 
