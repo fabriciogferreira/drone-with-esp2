@@ -39,6 +39,10 @@ struct DataReceived {
   };
 
   Errors error;
+  unsigned int speed;
+  float angles[3];
+  float pwmSignalInUs[4];
+  float angularVelocities[3];
 };
 
 DataReceived dataReceived;
