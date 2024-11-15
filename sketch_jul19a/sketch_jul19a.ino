@@ -296,19 +296,41 @@ void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t res
 
 void WhenReceivingDataDo(const esp_now_recv_info_t *macAddr, const uint8_t *droneData, const int dataLen) {
   memcpy(&dataReceived, droneData, sizeof(dataReceived));
-}
 
-void loop() {
-  // for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
-  //   Serial.print(analogRead(*PT_PINS_XY_JS[i]));
-  //   Serial.print("\t");
-  // }
-
-  // Serial.print(digitalRead(PIN_J1Z));
+  // Serial.print("Yaw: " + String(package.dof[0]));
+  // Serial.print("\t");
+  
+  // Serial.print("Roll: " + String(package.dof[1]));
   // Serial.print("\t");
 
-  // Serial.print(digitalRead(PIN_J2Z));
+  // Serial.print("Pitch: " + String(package.dof[2]));
   // Serial.print("\t");
 
-  // Serial.println();
+  // Serial.print("Throttle: " + String(package.throttle));
+  // Serial.print("\t");
+
+  // Serial.print("Flight Mode: " + String(package.flightMode));
+  // Serial.print("\t");
+
+  Serial.print(dataReceived.speed);
+  Serial.print("\t");
+
+  for (int i = 0; i < 3; i++) {
+    Serial.print(dataReceived.angles[i]);
+    Serial.print("\t");
+  }
+
+  for (int i = 0; i < 4; i++) {
+    Serial.print(dataReceived.pwmSignalInUs[i]);
+    Serial.print("\t");
+  }
+
+  for (int i = 0; i < 3; i++) {
+    Serial.print(dataReceived.angularVelocities[i]);
+    Serial.print("\t");
+  }
+
+  Serial.println();
 }
+
+void loop() {}
