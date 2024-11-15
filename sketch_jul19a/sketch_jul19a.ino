@@ -17,8 +17,10 @@ Adafruit_SSD1306 Display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 //---------------------------------------|ESP|---------------------------------------
 const uint8_t SLAVES_MAC_ADDRESS[][6] = {
-  { 0xCC, 0xDB, 0xA7, 0x30, 0x46, 0x34 }  //Mac address do ESP32 do drone
+  // { 0xCC, 0xDB, 0xA7, 0x30, 0x46, 0x34 }  //Mac address do meu ESP32 para o drone
+  { 0xD0, 0xEF, 0x76, 0x33, 0x33, 0xC0 }  //Mac address do ESP32 do professor para o drone
 };
+
 const unsigned int CHANNEL = 1;  //Canal do slave
 const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
 
