@@ -117,14 +117,14 @@ bool flightMode = true;
 
 //---------------------------------------|PID|---------------------------------------
 float rollAndPitchPIDAngleAdjustment[2][3] = {
-  {0.5, 0.05, 10}, //ROLL
-  {0.5, 0.05, 10}, //Pitch
+  {0.5, 0.71, 10}, //ROLL
+  {0.5, 0.71, 10}, //Pitch
 };
 
 float pidAngularVelocityAdjustments[3][3] ={
-  {2, 0.02, 0},//yaw
-  {2, 0.02, 0},//roll
-  {1, 0.05, 0},//pitch
+  {1, 0.92, 0},//yaw
+  {2, 0.69, 0},//roll
+  {2, 0.69, 0},//pitch
 };
 
 float pidVelocityAngularKi[] = {0, 0, 0};//yaw, roll, pitch
