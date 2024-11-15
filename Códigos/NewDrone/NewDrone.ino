@@ -17,16 +17,7 @@ struct DataReceived {
 
 DataReceived dataReceived;
 
-struct DataSend {
-  enum Errors {
-    NOT_ERROR = 0,
-    MPU6050_ERROR = 1,
-  };
 
-  Errors error;
-};
-
-DataSend dataSend = {DataSend::NOT_ERROR};
 
 bool isDisconnected = true;
 
@@ -56,6 +47,20 @@ unsigned int speed = MIN_SPEED;
 
 float pwmSignalInUs[] = {0, 0, 0, 0};
 
+struct DataSend {
+  enum Errors {
+    NOT_ERROR = 0,
+    MPU6050_ERROR = 1,
+  };
+
+  Errors error;
+  unsigned int speed;
+  float angles[3];
+  float pwmSignalInUs[4];
+  float angularVelocities[3];
+};
+
+DataSend dataSend = {DataSend::NOT_ERROR, speed, {0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0}};
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
