@@ -1,204 +1,176 @@
+/*
+Control
+  Organizar código
+  Renomear varivaveis
+  utilizar objeto que envia como variavel
+Drone
+  Organizar código
+  Renomear varivaveis
+  utilizar objeto que envia como variavel
+  Add variavel channel channel
+*/
+
+
+//===================================================================================
+//====================================|VARIABLES|====================================
+//===================================================================================
 //------------------------------------|LIBRARIES|------------------------------------
-#include <WiFi.h>
-#include <Wire.h>
-#include <esp_now.h>
-#include <MPU6050_tockn.h>
-
-//--------------------------------------|TIMES|--------------------------------------
-const int SOFTWARE_CYCLE_TIME_IN_US = 6000;
-int cycleStartTime = 0;
-
-//-------------------------------------|ENGINES|-------------------------------------
-// Motor 1, 2, 3, 4
-const int MOTOR_PINS[4] = {26, 14, 18, 19}; //não usar do 6 ao 11
-const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
-
-const int RESOLUTION = 8; //0-4095 == 4096
-const int FREQUENCY = 50000;
-
-const unsigned int MIN_SPEED = 0;
-const unsigned int MAX_SPEED = 255;
-const unsigned int SPEED_PIN = 34;
-unsigned int speed = MIN_SPEED;
-
-float pwmSignalInUs[] = {0, 0, 0, 0};
+  #include <WiFi.h>
+  #include <Wire.h>
+  #include <esp_now.h>
+  #include <MPU6050_tockn.h>
 
 //----------------------------------|COMUNICATION|-----------------------------------
-struct ControlData {
-  unsigned int dof[3];
-  unsigned int throttle;
-  bool flightMode;
-};
-
-ControlData controlData;
-
-struct DroneData {
-  enum Errors {
-    NOT_ERROR = 0,
-    MPU6050_ERROR = 1,
+  struct ControlData {
+    unsigned int dof[3];
+    unsigned int throttle;
+    bool flightMode;
   };
 
-  Errors error;
-  unsigned int speed;
-  float angles[3];
-  float pwmSignalInUs[4];
-  float angularVelocities[3];
-};
+  ControlData controlData;
 
-DroneData droneData = {DroneData::NOT_ERROR, speed, {0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0}};
+  struct DroneData {
+    enum Errors {
+      NOT_ERROR = 0,
+      MPU6050_ERROR = 1,
+    };
 
-bool isDisconnected = true;
+    Errors error;
+    unsigned int speed;
+    float angles[3];
+    float pwmSignalInUs[4];
+    float angularVelocities[3];
+  };
 
-const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
+  DroneData droneData = {DroneData::NOT_ERROR, 0, {0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0}};
+
+  const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
+
+  bool isDisconnected = true;
+
+//--------------------------------------|TIMES|--------------------------------------
+  const int SOFTWARE_CYCLE_TIME_IN_US = 6000;
+  int cycleStartTime = 0;
+  float engineStartTime = 0;
+  float angleCalculationTimeInUs = 0;
+
 //-------------------------------------|ENGINES|-------------------------------------
-int rcYawAngle = 0;
-int rcThrotle = 0;
-int rcRollAngle = 0;
-int rcPitchAngle = 0;
-int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
-int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
+  // Motor 1, 2, 3, 4
+  const int MOTOR_PINS[4] = {26, 14, 18, 19}; //não usar do 6 ao 11
+  const int CHANNELS[4] = { 0, 1, 2, 3 }; //Utilizando 4 canais de 16 do PWM do ESP32  
 
-float engineStartTime = 0;
-bool anyEngineOn;
+  const int RESOLUTION = 8; //0-4095 == 4096
+  const int FREQUENCY = 50000;
+
+  const unsigned int MIN_SPEED = 0;
+  const unsigned int MAX_SPEED = 255;
+  const unsigned int SPEED_PIN = 34;
+  unsigned int speed = MIN_SPEED;
+
+  float pwmSignalInUs[] = {0, 0, 0, 0};
+  bool anyEngineOn;
+
+//-------------------------------------|CONTROL|-------------------------------------
+  int rcYawAngle = 0;
+  int rcThrotle = 0;
+  int rcRollAngle = 0;
+  int rcPitchAngle = 0;
+  int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
+  int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
 
 //-------------------------------------|MPU6050|-------------------------------------
-#define MPU6050Address 0x68
+  #define MPU6050Address 0x68
 
-MPU6050 mpu6050(Wire);
+  MPU6050 mpu6050(Wire);
 
-float MPU6050AccX = 0;
-float MPU6050AccY = 0;
-float MPU6050AccZ = 0;
-float Temperature = 0;
-float MPU6050GyrX = 0;
-float MPU6050GyrY = 0;
-float MPU6050GyrZ = 0;
-float *PT_MPU6050_ACC_DATA[3] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ};
-float *PT_MPU6050_GYR_DATA[3] = {&MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
-float *PT_MPU6050_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &Temperature, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
-float *PT_MPU6050_ACC_AND_GYR_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
-
-
-float MPU6050AccCalX = 0;
-float MPU6050AccCalY = 0;
-float MPU6050AccCalZ = 0;
-float MPU6050GyrCalX = 0;
-float MPU6050GyrCalY = 0;
-float MPU6050GyrCalZ = 0;
-float *PT_MPU6050_ACC_CAL_DATA[3] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ};
-float *PT_MPU6050_GYR_CAL_DATA[3] = {&MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
-float *PT_MPU6050_CAL_DATA[] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ, &MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
+  float MPU6050AccX = 0;
+  float MPU6050AccY = 0;
+  float MPU6050AccZ = 0;
+  float Temperature = 0;
+  float MPU6050GyrX = 0;
+  float MPU6050GyrY = 0;
+  float MPU6050GyrZ = 0;
+  float *PT_MPU6050_ACC_DATA[3] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ};
+  float *PT_MPU6050_GYR_DATA[3] = {&MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
+  float *PT_MPU6050_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &Temperature, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
+  float *PT_MPU6050_ACC_AND_GYR_DATA[] = {&MPU6050AccX, &MPU6050AccY, &MPU6050AccZ, &MPU6050GyrX, &MPU6050GyrY, &MPU6050GyrZ};
 
 
-float angularVelocityGyrX = 0;
-float angularVelocityGyrY = 0;
-float angularVelocityGyrZ = 0;
-float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
-float PT_GYRO_VELOCITY_ANGULAR_ANT[] = {0, 0, 0};
-float vectorAcc = 0;
-float pitchAngleAcceleration = 0;
-float rollAngleAcceleration = 0;
+  float MPU6050AccCalX = 0;
+  float MPU6050AccCalY = 0;
+  float MPU6050AccCalZ = 0;
+  float MPU6050GyrCalX = 0;
+  float MPU6050GyrCalY = 0;
+  float MPU6050GyrCalZ = 0;
+  float *PT_MPU6050_ACC_CAL_DATA[3] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ};
+  float *PT_MPU6050_GYR_CAL_DATA[3] = {&MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
+  float *PT_MPU6050_CAL_DATA[] = {&MPU6050AccCalX, &MPU6050AccCalY, &MPU6050AccCalZ, &MPU6050GyrCalX, &MPU6050GyrCalY, &MPU6050GyrCalZ};
 
 
-float yawAngle = 0;
-float rollAngle = 0;
-float pitchAngle = 0;
-float *PT_ANGLES[] = {&yawAngle, &rollAngle, &pitchAngle};
-float *PT_ROLL_AND_PITCH_ANGLES[] = {&rollAngle, &pitchAngle};
+  float angularVelocityGyrX = 0;
+  float angularVelocityGyrY = 0;
+  float angularVelocityGyrZ = 0;
+  float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
+  float PT_GYRO_VELOCITY_ANGULAR_ANT[] = {0, 0, 0};
+  float vectorAcc = 0;
+  float pitchAngleAcceleration = 0;
+  float rollAngleAcceleration = 0;
 
 
-float lastYawAngle = 0;
-float lastRollAngle = 0;
-float lastPitchAngle = 0;
-float *lastAngles[] = {&lastYawAngle, &lastRollAngle, &lastPitchAngle};
-float *PT_LAST_ROLL_AND_PITCH_ANGLE[] = {&lastRollAngle, &lastPitchAngle};
+  float yawAngle = 0;
+  float rollAngle = 0;
+  float pitchAngle = 0;
+  float *PT_ANGLES[] = {&yawAngle, &rollAngle, &pitchAngle};
+  float *PT_ROLL_AND_PITCH_ANGLES[] = {&rollAngle, &pitchAngle};
 
 
-bool setGyroAngles = false;
+  float lastYawAngle = 0;
+  float lastRollAngle = 0;
+  float lastPitchAngle = 0;
+  float *lastAngles[] = {&lastYawAngle, &lastRollAngle, &lastPitchAngle};
+  float *PT_LAST_ROLL_AND_PITCH_ANGLE[] = {&lastRollAngle, &lastPitchAngle};
 
-bool isCalibrated = false;
+
+  bool setGyroAngles = false;
+
+  bool isCalibrated = false;
 //-----------------------------------|PREFERENCES|-----------------------------------
-bool flightMode = true;
+  bool flightMode = true;
 
 //---------------------------------------|PID|---------------------------------------
-float rollAndPitchPIDAngleAdjustment[2][3] = {
-  {0.5, 0.71, 10}, //ROLL
-  {0.5, 0.71, 10}, //Pitch
-};
+  float rollAndPitchPIDAngleAdjustment[2][3] = {
+    {0.5, 0.71, 10}, //ROLL
+    {0.5, 0.71, 10}, //Pitch
+  };
 
-float pidAngularVelocityAdjustments[3][3] ={
-  {1, 0.92, 0},//yaw
-  {2, 0.69, 0},//roll
-  {2, 0.69, 0},//pitch
-};
+  float pidAngularVelocityAdjustments[3][3] ={
+    {1, 0.92, 0},//yaw
+    {2, 0.69, 0},//roll
+    {2, 0.69, 0},//pitch
+  };
 
-float pidVelocityAngularKi[] = {0, 0, 0};//yaw, roll, pitch
-float rollAndPitchPidAngleKi[2] = {0, 0}; //roll, pitch
+  float pidVelocityAngularKi[] = {0, 0, 0};//yaw, roll, pitch
+  float rollAndPitchPidAngleKi[2] = {0, 0}; //roll, pitch
 
-float yawPidAngleOutput = 0;
-float rollPidAngleOutput = 0;
-float pitchPidAngleOutput = 0;
-float *PT_PID_ANGLE_OUTPUT[] = {&yawPidAngleOutput, &rollPidAngleOutput, &pitchPidAngleOutput};
-float *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[] = {&rollPidAngleOutput, &pitchPidAngleOutput};
+  float yawPidAngleOutput = 0;
+  float rollPidAngleOutput = 0;
+  float pitchPidAngleOutput = 0;
+  float *PT_PID_ANGLE_OUTPUT[] = {&yawPidAngleOutput, &rollPidAngleOutput, &pitchPidAngleOutput};
+  float *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[] = {&rollPidAngleOutput, &pitchPidAngleOutput};
 
-float PT_PID_VELOCITY_ANGULAR_OUTPUT[] = {0,0,0};
+  float PT_PID_VELOCITY_ANGULAR_OUTPUT[] = {0,0,0};
 
-int pidAngleIntegralError = 130;
-int pidVelocityAngularIntegralError = 380;
+  int pidAngleIntegralError = 130;
+  int pidVelocityAngularIntegralError = 380;
 
-template<typename T, int N>
-int getArraySize(T (&array)[N]) {
-  return N;
-}
-
-void pidVelocityAngular(){
-  float angularVelocityPidAngle = 0;
-  float error = 0, kp = 0, kd;
-
-  for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
-    if (i == 0) {
-      angularVelocityPidAngle = rcYawAngle;
-    }else{
-      angularVelocityPidAngle = flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
-    }
-
-    error = angularVelocityPidAngle - *PT_GYRO_VELOCITY_ANGULAR[i];
-
-    kp = pidAngularVelocityAdjustments[i][0] * error;
-
-
-    pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + error;
-    pidVelocityAngularKi[i] = pidAngularVelocityAdjustments[i][1] * pidVelocityAngularKi[i];
-    pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
-    
-    kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
-
-    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
-    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = constrain(PT_PID_VELOCITY_ANGULAR_OUTPUT[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
+//===================================================================================
+//======================================|CODE|=======================================
+//===================================================================================
+//--------------------------------------|UTILS|--------------------------------------
+  template<typename T, int N>
+  int getArraySize(T (&array)[N]) {
+    return N;
   }
-}
-
-void pidAngle(){
-  float error = 0;
-  float kp = 0;
-  float kd = 0;
-
-  for (int i = 0; i < getArraySize(PT_RC_ROLL_AND_PITCH_ANGLES); i++) {
-    error = *PT_RC_ROLL_AND_PITCH_ANGLES[i] - *PT_ROLL_AND_PITCH_ANGLES[i];
-
-    kp = rollAndPitchPIDAngleAdjustment[i][0] * error;
-    
-    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] + error;
-    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] * rollAndPitchPIDAngleAdjustment[i][1];
-    rollAndPitchPidAngleKi[i] = constrain(rollAndPitchPidAngleKi[i], -pidAngleIntegralError, pidAngleIntegralError);
-    
-    kd = rollAndPitchPIDAngleAdjustment[i][2] * (*PT_ROLL_AND_PITCH_ANGLES[i] - *PT_LAST_ROLL_AND_PITCH_ANGLE[i]);
-
-    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = kp + rollAndPitchPidAngleKi[i] + kd;
-
-    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = constrain(*PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i], -pidAngleIntegralError, pidAngleIntegralError);
-  }
-}
 
 void startSerial() {
   Serial.begin(115200);
@@ -223,6 +195,49 @@ void settings(){
   }
 }
 
+void sendData(){
+  esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &droneData, sizeof(droneData));
+}
+
+void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
+
+  droneData.speed = speed;
+  for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
+    droneData.angles[i] = *PT_ANGLES[i];
+  }
+
+
+  for (int i = 0; i < 4; i++) {
+    droneData.pwmSignalInUs[i] = pwmSignalInUs[i];
+  }
+
+  for (int i = 0; i < 3; i++) {
+    droneData.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
+  }
+
+  sendData();
+}
+
+void registerFunctionThatExecutesWhenReceivingResponse(){
+  esp_now_register_send_cb(WhenReceivingResponseDo);
+}
+
+void processRCData(){
+  rcThrotle = controlData.throttle > 1800 ? 1800 : controlData.throttle;
+
+  flightMode = controlData.flightMode;
+  
+  for (int i = 0; i < getArraySize(controlData.dof); i++) {
+    *PT_RC_ANGLES[i] = controlData.dof[i];
+  }
+}
+
+void whenReceivingDataDo(const esp_now_recv_info_t *MAC_ADDRESS, const uint8_t* CONTROL_DATA, const int DATA_SIZE){
+  isDisconnected = false;
+  memcpy(&controlData, CONTROL_DATA, sizeof(controlData));
+  processRCData();
+}
+
 void registerFunctionThatExecutesWhenReceivingData(){
   esp_now_register_recv_cb(whenReceivingDataDo);
   while (isDisconnected) {delayMicroseconds(1);};
@@ -237,10 +252,6 @@ void addMasterAsPeerOnEspNow(){
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     ESP.restart();
   }
-}
-
-void sendData(){
-  esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &droneData, sizeof(droneData));
 }
 
 void setupMPU6050() {
@@ -293,7 +304,85 @@ void setupMPU6050() {
     5Hz(19ms):0x06
   */
 }
-//CORRETO
+
+void averageAccAndGyr(){
+  int n = 3000;
+  for (int i = 0; i < n; i++) {
+    readMPU6050();
+
+    for (int j = 0; j < getArraySize(PT_MPU6050_ACC_AND_GYR_DATA); j++) {
+      *PT_MPU6050_CAL_DATA[j] = *PT_MPU6050_CAL_DATA[j] + *PT_MPU6050_ACC_AND_GYR_DATA[j];
+    }
+
+    delayMicroseconds(20);
+  }
+
+  for (int i = 0; i < getArraySize(PT_MPU6050_CAL_DATA); i++) {
+    *PT_MPU6050_CAL_DATA[i] = *PT_MPU6050_CAL_DATA[i] / n;
+  }
+
+  isCalibrated = true;
+}
+
+void setup() {
+  startSerial();
+  startStationMode();
+  startEspNow();
+  settings();
+  registerFunctionThatExecutesWhenReceivingResponse();
+  registerFunctionThatExecutesWhenReceivingData();
+  addMasterAsPeerOnEspNow();
+  setupMPU6050();
+  averageAccAndGyr();
+  sendData();
+
+  cycleStartTime = micros();
+}
+
+void manageSoftwareCycle(){
+  if (micros() - cycleStartTime > SOFTWARE_CYCLE_TIME_IN_US + 50) {
+    Serial.println("Passou");
+  }
+
+  while (micros() - cycleStartTime < SOFTWARE_CYCLE_TIME_IN_US) {
+    delayMicroseconds(1);
+  }
+
+  cycleStartTime = micros();
+} 
+
+void WriteSpeed(int Value) {
+  for (int i = 0; i < 4; i++) {
+    ledcWrite(MOTOR_PINS[i], Value);
+  }
+}
+
+void IncreaseSpeed() {
+  for (int i = 0; i < speed; i++) {
+    WriteSpeed(i);
+  }
+}
+
+void ResetEngineSpeed(int Address){
+  ledcWrite(Address, 0);
+}
+
+void emitPWMSignal(){
+  IncreaseSpeed();
+
+  engineStartTime = micros();
+
+  do {
+    anyEngineOn = false;
+
+    for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
+      if (engineStartTime + pwmSignalInUs[i] <= micros()) ResetEngineSpeed(MOTOR_PINS[i]);
+      
+      if (ledcRead(MOTOR_PINS[i]) > 10) anyEngineOn = true;
+    }
+  } while (anyEngineOn);
+}
+
 void readMPU6050() {
   Wire.beginTransmission(MPU6050Address);
   Wire.write(0x3B);
@@ -323,27 +412,6 @@ void readMPU6050() {
   }
 }
 
-void averageAccAndGyr(){
-  int n = 3000;
-  for (int i = 0; i < n; i++) {
-    readMPU6050();
-
-    for (int j = 0; j < getArraySize(PT_MPU6050_ACC_AND_GYR_DATA); j++) {
-      *PT_MPU6050_CAL_DATA[j] = *PT_MPU6050_CAL_DATA[j] + *PT_MPU6050_ACC_AND_GYR_DATA[j];
-    }
-
-    delayMicroseconds(20);
-  }
-
-  for (int i = 0; i < getArraySize(PT_MPU6050_CAL_DATA); i++) {
-    *PT_MPU6050_CAL_DATA[i] = *PT_MPU6050_CAL_DATA[i] / n;
-  }
-
-  isCalibrated = true;
-}
-
-float mpu6050RuntimeInMs = 0;
-float angleCalculationTimeInUs = 0;
 void processMPU6050Data(){
   // for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR); i++) {
   //   *PT_GYRO_VELOCITY_ANGULAR[i] = (*PT_MPU6050_GYR_DATA[i] - *PT_MPU6050_GYR_CAL_DATA[i]) / 65.5;
@@ -353,7 +421,7 @@ void processMPU6050Data(){
   *PT_GYRO_VELOCITY_ANGULAR[1] = mpu6050.getGyroZ();
   *PT_GYRO_VELOCITY_ANGULAR[2] = mpu6050.getGyroY();
 
-  mpu6050RuntimeInMs = (micros() - angleCalculationTimeInUs) / 1000;
+  float mpu6050RuntimeInMs = (micros() - angleCalculationTimeInUs) / 1000;
 
   pitchAngle = pitchAngle + angularVelocityGyrX * mpu6050RuntimeInMs / 1000;
   rollAngle = rollAngle + angularVelocityGyrY * mpu6050RuntimeInMs / 1000;
@@ -377,6 +445,55 @@ void processMPU6050Data(){
     rollAngle = rollAngleAcceleration;
 
     setGyroAngles = true;
+  }
+}
+
+void pidAngle(){
+  float error = 0;
+  float kp = 0;
+  float kd = 0;
+
+  for (int i = 0; i < getArraySize(PT_RC_ROLL_AND_PITCH_ANGLES); i++) {
+    error = *PT_RC_ROLL_AND_PITCH_ANGLES[i] - *PT_ROLL_AND_PITCH_ANGLES[i];
+
+    kp = rollAndPitchPIDAngleAdjustment[i][0] * error;
+    
+    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] + error;
+    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] * rollAndPitchPIDAngleAdjustment[i][1];
+    rollAndPitchPidAngleKi[i] = constrain(rollAndPitchPidAngleKi[i], -pidAngleIntegralError, pidAngleIntegralError);
+    
+    kd = rollAndPitchPIDAngleAdjustment[i][2] * (*PT_ROLL_AND_PITCH_ANGLES[i] - *PT_LAST_ROLL_AND_PITCH_ANGLE[i]);
+
+    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = kp + rollAndPitchPidAngleKi[i] + kd;
+
+    *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = constrain(*PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i], -pidAngleIntegralError, pidAngleIntegralError);
+  }
+}
+
+void pidVelocityAngular(){
+  float angularVelocityPidAngle = 0;
+  float error = 0, kp = 0, kd;
+
+  for (int i = 0; i < getArraySize(PT_PID_ANGLE_OUTPUT); i++) {
+    if (i == 0) {
+      angularVelocityPidAngle = rcYawAngle;
+    }else{
+      angularVelocityPidAngle = flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
+    }
+
+    error = angularVelocityPidAngle - *PT_GYRO_VELOCITY_ANGULAR[i];
+
+    kp = pidAngularVelocityAdjustments[i][0] * error;
+
+
+    pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + error;
+    pidVelocityAngularKi[i] = pidAngularVelocityAdjustments[i][1] * pidVelocityAngularKi[i];
+    pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
+    
+    kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
+
+    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
+    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = constrain(PT_PID_VELOCITY_ANGULAR_OUTPUT[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
   }
 }
 
@@ -405,115 +522,11 @@ void modulator(){
   }
 }
 
-void manageSoftwareCycle(){
-  if (micros() - cycleStartTime > SOFTWARE_CYCLE_TIME_IN_US + 50) {
-    Serial.println("Passou");
-  }
-
-  while (micros() - cycleStartTime < SOFTWARE_CYCLE_TIME_IN_US) {
-    delayMicroseconds(1);
-  }
-
-  cycleStartTime = micros();
-} 
-
-void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
-
-  droneData.speed = speed;
-  for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
-    droneData.angles[i] = *PT_ANGLES[i];
-  }
-
-
-  for (int i = 0; i < 4; i++) {
-    droneData.pwmSignalInUs[i] = pwmSignalInUs[i];
-  }
-
-  for (int i = 0; i < 3; i++) {
-    droneData.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
-  }
-
-  sendData();
-}
-
-void registerFunctionThatExecutesWhenReceivingResponse(){
-  esp_now_register_send_cb(WhenReceivingResponseDo);
-}
-
-void setup() {
-  startSerial();
-  startStationMode();
-  startEspNow();
-  settings();
-  registerFunctionThatExecutesWhenReceivingResponse();
-  registerFunctionThatExecutesWhenReceivingData();
-  addMasterAsPeerOnEspNow();
-  setupMPU6050();
-  averageAccAndGyr();
-  sendData();
-
-  cycleStartTime = micros();
-}
-
-void processRCData(){
-  rcThrotle = controlData.throttle > 1800 ? 1800 : controlData.throttle;
-
-  flightMode = controlData.flightMode;
-  
-  for (int i = 0; i < getArraySize(controlData.dof); i++) {
-    *PT_RC_ANGLES[i] = controlData.dof[i];
-  }
-}
-
-void whenReceivingDataDo(const esp_now_recv_info_t *MAC_ADDRESS, const uint8_t* CONTROL_DATA, const int DATA_SIZE){
-  isDisconnected = false;
-  memcpy(&controlData, CONTROL_DATA, sizeof(controlData));
-  processRCData();
-}
-
 void prepareForNewCycle(){
   for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR_ANT); i++) {
     *lastAngles[i] = *PT_ANGLES[i];
     PT_GYRO_VELOCITY_ANGULAR_ANT[i] = *PT_GYRO_VELOCITY_ANGULAR[i];
   }
-}
-
-void WriteSpeed(int Value) {
-  for (int i = 0; i < 4; i++) {
-    ledcWrite(MOTOR_PINS[i], Value);
-  }
-}
-
-void IncreaseSpeed() {
-  for (int i = 0; i < speed; i++) {
-    WriteSpeed(i);
-  }
-}
-
-void ResetEngineSpeed(int Address){
-  ledcWrite(Address, 0);
-}
-
-void DecreaseSpeed() {
-  for (int i = speed; i >= 1; --i) {
-    WriteSpeed(i);
-  }
-}
-
-void emitPWMSignal(){
-  IncreaseSpeed();
-
-  engineStartTime = micros();
-
-  do {
-    anyEngineOn = false;
-
-    for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
-      if (engineStartTime + pwmSignalInUs[i] <= micros()) ResetEngineSpeed(MOTOR_PINS[i]);
-      
-      if (ledcRead(MOTOR_PINS[i]) > 10) anyEngineOn = true;
-    }
-  } while (anyEngineOn);
 }
 
 void readSpeed(){
