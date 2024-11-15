@@ -478,10 +478,30 @@ void prepareForNewCycle(){
   }
 }
 
-void emitPWMSignal(){
-  for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
-    digitalWrite(MOTOR_PINS[i], HIGH);
+void WriteSpeed(int Value) {
+  for (int i = 0; i < 4; i++) {
+    ledcWrite(MOTOR_PINS[i], Value);
   }
+}
+
+void IncreaseSpeed() {
+  for (int i = 0; i < speed; i++) {
+    WriteSpeed(i);
+  }
+}
+
+void ResetEngineSpeed(int Address){
+  ledcWrite(Address, 0);
+}
+
+void DecreaseSpeed() {
+  for (int i = speed; i >= 1; --i) {
+    WriteSpeed(i);
+  }
+}
+
+void emitPWMSignal(){
+  IncreaseSpeed();
 
   engineStartTime = micros();
 
@@ -489,9 +509,9 @@ void emitPWMSignal(){
     anyEngineOn = false;
 
     for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
-      if (engineStartTime + pwmSignalInUs[i] <= micros()) digitalWrite(MOTOR_PINS[i], LOW);
+      if (engineStartTime + pwmSignalInUs[i] <= micros()) ResetEngineSpeed(MOTOR_PINS[i]);
       
-      if (digitalRead(MOTOR_PINS[i]) == HIGH) anyEngineOn = true;
+      if (ledcRead(MOTOR_PINS[i]) > 10) anyEngineOn = true;
     }
   } while (anyEngineOn);
 }
