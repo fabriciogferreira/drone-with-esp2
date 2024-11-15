@@ -8,30 +8,6 @@
 const int SOFTWARE_CYCLE_TIME_IN_US = 6000;
 int cycleStartTime = 0;
 
-//----------------------------------|COMUNICATION|-----------------------------------
-struct DataReceived {
-  unsigned int dof[3];
-  unsigned int throttle;
-  bool flightMode;
-};
-
-DataReceived dataReceived;
-
-
-
-bool isDisconnected = true;
-
-const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
-//-------------------------------------|ENGINES|-------------------------------------
-int rcYawAngle = 0;
-int rcThrotle = 0;
-int rcRollAngle = 0;
-int rcPitchAngle = 0;
-int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
-int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
-
-float engineStartTime = 0;
-bool anyEngineOn;
 //-------------------------------------|ENGINES|-------------------------------------
 // Motor 1, 2, 3, 4
 const int MOTOR_PINS[4] = {26, 14, 18, 19}; //não usar do 6 ao 11
@@ -47,7 +23,16 @@ unsigned int speed = MIN_SPEED;
 
 float pwmSignalInUs[] = {0, 0, 0, 0};
 
-struct DataSend {
+//----------------------------------|COMUNICATION|-----------------------------------
+struct ControlData {
+  unsigned int dof[3];
+  unsigned int throttle;
+  bool flightMode;
+};
+
+ControlData controlData;
+
+struct DroneData {
   enum Errors {
     NOT_ERROR = 0,
     MPU6050_ERROR = 1,
@@ -60,7 +45,22 @@ struct DataSend {
   float angularVelocities[3];
 };
 
-DataSend dataSend = {DataSend::NOT_ERROR, speed, {0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0}};
+DroneData droneData = {DroneData::NOT_ERROR, speed, {0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0}};
+
+bool isDisconnected = true;
+
+const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
+//-------------------------------------|ENGINES|-------------------------------------
+int rcYawAngle = 0;
+int rcThrotle = 0;
+int rcRollAngle = 0;
+int rcPitchAngle = 0;
+int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
+int *PT_RC_ROLL_AND_PITCH_ANGLES[] = {&rcRollAngle, &rcPitchAngle};
+
+float engineStartTime = 0;
+bool anyEngineOn;
+
 //-------------------------------------|MPU6050|-------------------------------------
 #define MPU6050Address 0x68
 
@@ -240,7 +240,7 @@ void addMasterAsPeerOnEspNow(){
 }
 
 void sendData(){
-  esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &dataSend, sizeof(dataSend));
+  esp_now_send(MASTER_MAC_ADDRESS, (uint8_t *) &droneData, sizeof(droneData));
 }
 
 void setupMPU6050() {
@@ -272,7 +272,7 @@ void setupMPU6050() {
   while (Wire.available() < 1);
   
   if (Wire.read() != 0x08) {
-    dataSend.error = DataSend::MPU6050_ERROR;
+    droneData.error = DroneData::MPU6050_ERROR;
     sendData();
     while (true) {delayMicroseconds(1);};
   }
@@ -419,18 +419,18 @@ void manageSoftwareCycle(){
 
 void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
 
-  dataSend.speed = speed;
+  droneData.speed = speed;
   for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
-    dataSend.angles[i] = *PT_ANGLES[i];
+    droneData.angles[i] = *PT_ANGLES[i];
   }
 
 
   for (int i = 0; i < 4; i++) {
-    dataSend.pwmSignalInUs[i] = pwmSignalInUs[i];
+    droneData.pwmSignalInUs[i] = pwmSignalInUs[i];
   }
 
   for (int i = 0; i < 3; i++) {
-    dataSend.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
+    droneData.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
   }
 
   sendData();
@@ -456,18 +456,18 @@ void setup() {
 }
 
 void processRCData(){
-  rcThrotle = dataReceived.throttle > 1800 ? 1800 : dataReceived.throttle;
+  rcThrotle = controlData.throttle > 1800 ? 1800 : controlData.throttle;
 
-  flightMode = dataReceived.flightMode;
+  flightMode = controlData.flightMode;
   
-  for (int i = 0; i < getArraySize(dataReceived.dof); i++) {
-    *PT_RC_ANGLES[i] = dataReceived.dof[i];
+  for (int i = 0; i < getArraySize(controlData.dof); i++) {
+    *PT_RC_ANGLES[i] = controlData.dof[i];
   }
 }
 
-void whenReceivingDataDo(const esp_now_recv_info_t * MAC_ADDRESS, const uint8_t* PACKAGE, const int PACKAGE_SIZE){
+void whenReceivingDataDo(const esp_now_recv_info_t *MAC_ADDRESS, const uint8_t* CONTROL_DATA, const int DATA_SIZE){
   isDisconnected = false;
-  memcpy(&dataReceived, PACKAGE, sizeof(dataReceived));
+  memcpy(&controlData, CONTROL_DATA, sizeof(controlData));
   processRCData();
 }
 

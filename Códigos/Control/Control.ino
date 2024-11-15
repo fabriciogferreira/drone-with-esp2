@@ -25,16 +25,16 @@ const unsigned int CHANNEL = 1;  //Canal do slave
 const unsigned int AMOUNT_OF_SLAVES = sizeof(SLAVES_MAC_ADDRESS) / 6; //Quantidade de ESP Escravos, os que vão receber dados
 
 //----------------------------------|COMUNICATION|-----------------------------------
-struct Package {
+struct ControlData {
   int dof[3];
   int throttle;
   volatile bool flightMode;
 };
 
-Package package = {{0, 0, 0}, 0, true};
+ControlData controlData = {{0, 0, 0}, 0, true};
 
 
-struct DataReceived {
+struct DroneData {
   enum Errors {
     NOT_ERROR = 0,
     MPU6050_ERROR = 1,
@@ -47,7 +47,7 @@ struct DataReceived {
   float angularVelocities[3];
 };
 
-DataReceived dataReceived;
+DroneData droneData;
 
 //-------------------------------------|CONTROL|-------------------------------------
 //DOF = Degrees Of Freedom
@@ -69,7 +69,7 @@ unsigned int minRangeOfJoystickAxes[] = {UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX}
 const unsigned int JOYSTICK_AXIS_DEAD_ZONE_RATES[] = {10, 10, 10, 10};
 unsigned int joystickAxisDeadZones[] = {0, 0, 0, 0};
 
-int *SetPoints[] = {&package.dof[0], &package.throttle, &package.dof[1], &package.dof[2]};
+int *SetPoints[] = {&controlData.dof[0], &controlData.throttle, &controlData.dof[1], &controlData.dof[2]};
 
 //--------------------------------------|UTILS|--------------------------------------
 bool stop = true;
@@ -92,7 +92,7 @@ int getArraySize(T (&array)[N]) {
 }
 
 void invertFlightMode(){
-  package.flightMode = !package.flightMode;
+  controlData.flightMode = !controlData.flightMode;
 }
 
 void readJ2Z(){
@@ -140,11 +140,11 @@ void calculatePackageValues() {
 }
 
 void checkDrone(){
-  switch (dataReceived.error) {
-    case DataReceived::MPU6050_ERROR:
+  switch (droneData.error) {
+    case DroneData::MPU6050_ERROR:
       printOnDisplay("O MMPU6050 apresentou erro", true, 0, true);
       break;
-    case DataReceived::NOT_ERROR:
+    case DroneData::NOT_ERROR:
       break;
     default:
       printOnDisplay("Erro desconhecido", true, 0, true);
@@ -269,7 +269,7 @@ void establishConnectionBetweenESPs(){
 }
 
 void sendDataEspDrone() {
-  esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &package, sizeof(package));
+  esp_now_send(SLAVES_MAC_ADDRESS[0], (uint8_t *) &controlData, sizeof(controlData));
 }
 
 void setup() {
@@ -287,46 +287,46 @@ void setup() {
   sendDataEspDrone();
 }
 
-void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
   calculatePackageValues();
   // delay(1000);
   checkDrone();
   sendDataEspDrone();
 }
 
-void WhenReceivingDataDo(const esp_now_recv_info_t *macAddr, const uint8_t *droneData, const int dataLen) {
-  memcpy(&dataReceived, droneData, sizeof(dataReceived));
+void WhenReceivingDataDo(const esp_now_recv_info_t *MAC_ADDRESS, const uint8_t *DRONE_DATA, const int DATA_SIZE) {
+  memcpy(&droneData, DRONE_DATA, sizeof(droneData));
 
-  // Serial.print("Yaw: " + String(package.dof[0]));
+  // Serial.print("Yaw: " + String(controlData.dof[0]));
   // Serial.print("\t");
   
-  // Serial.print("Roll: " + String(package.dof[1]));
+  // Serial.print("Roll: " + String(controlData.dof[1]));
   // Serial.print("\t");
 
-  // Serial.print("Pitch: " + String(package.dof[2]));
+  // Serial.print("Pitch: " + String(controlData.dof[2]));
   // Serial.print("\t");
 
-  // Serial.print("Throttle: " + String(package.throttle));
+  // Serial.print("Throttle: " + String(controlData.throttle));
   // Serial.print("\t");
 
-  // Serial.print("Flight Mode: " + String(package.flightMode));
+  // Serial.print("Flight Mode: " + String(controlData.flightMode));
   // Serial.print("\t");
 
-  Serial.print(dataReceived.speed);
+  Serial.print(droneData.speed);
   Serial.print("\t");
 
   for (int i = 0; i < 3; i++) {
-    Serial.print(dataReceived.angles[i]);
+    Serial.print(droneData.angles[i]);
     Serial.print("\t");
   }
 
   for (int i = 0; i < 4; i++) {
-    Serial.print(dataReceived.pwmSignalInUs[i]);
+    Serial.print(droneData.pwmSignalInUs[i]);
     Serial.print("\t");
   }
 
   for (int i = 0; i < 3; i++) {
-    Serial.print(dataReceived.angularVelocities[i]);
+    Serial.print(droneData.angularVelocities[i]);
     Serial.print("\t");
   }
 
