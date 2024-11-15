@@ -46,6 +46,7 @@ Drone
 
   const uint8_t MASTER_MAC_ADDRESS[] = {0xC4, 0xD8, 0xD5, 0x95, 0x97, 0xF4};
 
+  const unsigned int CHANNEL = 1;  //Canal do slave
   bool isDisconnected = true;
 
 //--------------------------------------|TIMES|--------------------------------------
@@ -244,12 +245,12 @@ void registerFunctionThatExecutesWhenReceivingData(){
 }
 
 void addMasterAsPeerOnEspNow(){
-  esp_now_peer_info_t peerInfo = {};
-  memcpy(peerInfo.peer_addr, MASTER_MAC_ADDRESS, 6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
+  esp_now_peer_info_t Salve = {};
+  memcpy(Salve.peer_addr, MASTER_MAC_ADDRESS, 6);
+  Salve.channel = CHANNEL;
+  Salve.encrypt = false;
 
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+  if (esp_now_add_peer(&Salve) != ESP_OK) {
     ESP.restart();
   }
 }
