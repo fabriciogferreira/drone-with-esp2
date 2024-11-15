@@ -161,7 +161,9 @@ void pidVelocityAngular(){
 
     kp = pidAngularVelocityAdjustments[i][0] * error;
 
-    pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + (pidAngularVelocityAdjustments[i][1] * error);
+
+    pidVelocityAngularKi[i] = pidVelocityAngularKi[i] + error;
+    pidVelocityAngularKi[i] = pidAngularVelocityAdjustments[i][1] * pidVelocityAngularKi[i];
     pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
     
     kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
@@ -180,13 +182,15 @@ void pidAngle(){
     error = *PT_RC_ROLL_AND_PITCH_ANGLES[i] - *PT_ROLL_AND_PITCH_ANGLES[i];
 
     kp = rollAndPitchPIDAngleAdjustment[i][0] * error;
-
-    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] + (rollAndPitchPIDAngleAdjustment[i][1] * error);
+    
+    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] + error;
+    rollAndPitchPidAngleKi[i] = rollAndPitchPidAngleKi[i] * rollAndPitchPIDAngleAdjustment[i][1];
     rollAndPitchPidAngleKi[i] = constrain(rollAndPitchPidAngleKi[i], -pidAngleIntegralError, pidAngleIntegralError);
     
     kd = rollAndPitchPIDAngleAdjustment[i][2] * (*PT_ROLL_AND_PITCH_ANGLES[i] - *PT_LAST_ROLL_AND_PITCH_ANGLE[i]);
 
     *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = kp + rollAndPitchPidAngleKi[i] + kd;
+
     *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i] = constrain(*PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i], -pidAngleIntegralError, pidAngleIntegralError);
   }
 }
