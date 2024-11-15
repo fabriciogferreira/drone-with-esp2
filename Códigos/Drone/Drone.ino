@@ -417,7 +417,7 @@ void manageSoftwareCycle(){
   cycleStartTime = micros();
 } 
 
-void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
 
   droneData.speed = speed;
   for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
