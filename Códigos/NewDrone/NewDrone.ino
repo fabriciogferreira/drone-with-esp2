@@ -417,15 +417,40 @@ void manageSoftwareCycle(){
   cycleStartTime = micros();
 } 
 
+void WhenReceivingResponseDo(const uint8_t *mac_addr,  esp_now_send_status_t response) {
+
+  dataSend.speed = speed;
+  for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
+    dataSend.angles[i] = *PT_ANGLES[i];
+  }
+
+
+  for (int i = 0; i < 4; i++) {
+    dataSend.pwmSignalInUs[i] = pwmSignalInUs[i];
+  }
+
+  for (int i = 0; i < 3; i++) {
+    dataSend.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
+  }
+
+  sendData();
+}
+
+void registerFunctionThatExecutesWhenReceivingResponse(){
+  esp_now_register_send_cb(WhenReceivingResponseDo);
+}
+
 void setup() {
   startSerial();
   startStationMode();
   startEspNow();
   settings();
+  registerFunctionThatExecutesWhenReceivingResponse();
   registerFunctionThatExecutesWhenReceivingData();
   addMasterAsPeerOnEspNow();
   setupMPU6050();
   averageAccAndGyr();
+  sendData();
 
   cycleStartTime = micros();
 }
