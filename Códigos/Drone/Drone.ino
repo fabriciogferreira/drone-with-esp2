@@ -110,9 +110,6 @@ Drone
   float angularVelocityGyrZ = 0;
   float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
   float PT_GYRO_VELOCITY_ANGULAR_ANT[] = {0, 0, 0};
-  float vectorAcc = 0;
-  float pitchAngleAcceleration = 0;
-  float rollAngleAcceleration = 0;
 
 
   float yawAngle = 0;
@@ -416,9 +413,9 @@ void processMPU6050Data(){
 
   angleCalculationTimeInUs = micros();
 
-  vectorAcc = sqrt(pow(MPU6050AccX, 2) + pow(MPU6050AccY, 2) + pow(MPU6050AccZ, 2));
-  pitchAngleAcceleration = asin(MPU6050AccY / vectorAcc) * 57.2958;
-  rollAngleAcceleration = asin(MPU6050AccX / vectorAcc) * -57.2958;
+  float vectorAcc = sqrt(pow(MPU6050AccX, 2) + pow(MPU6050AccY, 2) + pow(MPU6050AccZ, 2));
+  float pitchAngleAcceleration = asin(MPU6050AccY / vectorAcc) * 57.2958;
+  float rollAngleAcceleration = asin(MPU6050AccX / vectorAcc) * -57.2958;
 
   mpu6050.update();
 
