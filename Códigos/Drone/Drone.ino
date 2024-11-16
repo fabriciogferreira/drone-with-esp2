@@ -66,7 +66,6 @@ Drone
   const unsigned int MIN_SPEED = 0;
   const unsigned int MAX_SPEED = 255;
   const unsigned int SPEED_PIN = 34;
-  unsigned int speed = MIN_SPEED;
 
   bool anyEngineOn;
 
@@ -198,8 +197,6 @@ void sendData(){
 }
 
 void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
-
-  droneData.speed = speed;
   for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
     droneData.angles[i] = *PT_ANGLES[i];
   }
@@ -349,7 +346,7 @@ void WriteSpeed(int Value) {
 }
 
 void IncreaseSpeed() {
-  for (int i = 0; i < speed; i++) {
+  for (int i = 0; i < droneData.speed; i++) {
     WriteSpeed(i);
   }
 }
@@ -521,7 +518,7 @@ void prepareForNewCycle(){
 }
 
 void readSpeed(){
-  speed = map(analogRead(SPEED_PIN), 0, 4095, MIN_SPEED, MAX_SPEED);
+  droneData.speed = map(analogRead(SPEED_PIN), 0, 4095, MIN_SPEED, MAX_SPEED);
 }
 
 void loop() {
