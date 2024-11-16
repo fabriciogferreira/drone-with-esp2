@@ -340,8 +340,10 @@ void WriteSpeed(int Value) {
 }
 
 void IncreaseSpeed() {
-  for (int i = 0; i < droneData.motorSpeed; i++) {
+  const int INCREMENT = MAX_SPEED / 40;
+  for (int i = 0; i < droneData.motorSpeed;) {
     WriteSpeed(i);
+    i = i + INCREMENT;
   }
 }
 
