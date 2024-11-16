@@ -122,7 +122,7 @@ Drone
   float lastYawAngle = 0;
   float lastRollAngle = 0;
   float lastPitchAngle = 0;
-  float *lastAngles[] = {&lastYawAngle, &lastRollAngle, &lastPitchAngle};
+  float *PT_LAST_ANGLES[] = {&lastYawAngle, &lastRollAngle, &lastPitchAngle};
   float *PT_LAST_ROLL_AND_PITCH_ANGLE[] = {&lastRollAngle, &lastPitchAngle};
 
 
@@ -504,7 +504,7 @@ void modulator(){
 
 void prepareForNewCycle(){
   for (int i = 0; i < getArraySize(gyroVelocityAngularAnt); i++) {
-    *lastAngles[i] = *PT_ANGLES[i];
+    *PT_LAST_ANGLES[i] = *PT_ANGLES[i];
     gyroVelocityAngularAnt[i] = *PT_GYRO_VELOCITY_ANGULAR[i];
   }
 }
