@@ -109,7 +109,7 @@ Drone
   float angularVelocityGyrY = 0;
   float angularVelocityGyrZ = 0;
   float *PT_GYRO_VELOCITY_ANGULAR[] = {&angularVelocityGyrX, &angularVelocityGyrY, &angularVelocityGyrZ};
-  float PT_GYRO_VELOCITY_ANGULAR_ANT[] = {0, 0, 0};
+  float gyroVelocityAngularAnt[] = {0, 0, 0};
 
 
   float yawAngle = 0;
@@ -151,7 +151,7 @@ Drone
   float *PT_PID_ANGLE_OUTPUT[] = {&yawPidAngleOutput, &rollPidAngleOutput, &pitchPidAngleOutput};
   float *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[] = {&rollPidAngleOutput, &pitchPidAngleOutput};
 
-  float PT_PID_VELOCITY_ANGULAR_OUTPUT[] = {0,0,0};
+  float pidVelocityAngularOutput[] = {0,0,0};
 
   int pidAngleIntegralError = 130;
   int pidVelocityAngularIntegralError = 380;
@@ -198,7 +198,7 @@ void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t 
   }
 
   for (int i = 0; i < 3; i++) {
-    droneData.angularVelocities[i] = PT_PID_VELOCITY_ANGULAR_OUTPUT[i];
+    droneData.angularVelocities[i] = pidVelocityAngularOutput[i];
   }
 
   sendData();
@@ -472,10 +472,10 @@ void pidVelocityAngular(){
     pidVelocityAngularKi[i] = pidAngularVelocityAdjustments[i][1] * pidVelocityAngularKi[i];
     pidVelocityAngularKi[i] = constrain(pidVelocityAngularKi[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
     
-    kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - PT_GYRO_VELOCITY_ANGULAR_ANT[i]);
+    kd = pidAngularVelocityAdjustments[i][2] * (*PT_GYRO_VELOCITY_ANGULAR[i] - gyroVelocityAngularAnt[i]);
 
-    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = kp + pidVelocityAngularKi[i] + kd;
-    PT_PID_VELOCITY_ANGULAR_OUTPUT[i] = constrain(PT_PID_VELOCITY_ANGULAR_OUTPUT[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
+    pidVelocityAngularOutput[i] = kp + pidVelocityAngularKi[i] + kd;
+    pidVelocityAngularOutput[i] = constrain(pidVelocityAngularOutput[i], -pidVelocityAngularIntegralError, pidVelocityAngularIntegralError);
   }
 }
 
@@ -490,10 +490,10 @@ void modulator(){
       if(droneData.pwmSignalInUs[i] < 1000) droneData.pwmSignalInUs[i] = 950;
     }
   } else {
-    droneData.pwmSignalInUs[0] = controlData.throttle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[1] = controlData.throttle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[2] = controlData.throttle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[3] = controlData.throttle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[0] = controlData.throttle + pidVelocityAngularOutput[2] - pidVelocityAngularOutput[1] - pidVelocityAngularOutput[0];
+    droneData.pwmSignalInUs[1] = controlData.throttle + pidVelocityAngularOutput[2] + pidVelocityAngularOutput[1] + pidVelocityAngularOutput[0];
+    droneData.pwmSignalInUs[2] = controlData.throttle - pidVelocityAngularOutput[2] + pidVelocityAngularOutput[1] - pidVelocityAngularOutput[0];
+    droneData.pwmSignalInUs[3] = controlData.throttle - pidVelocityAngularOutput[2] - pidVelocityAngularOutput[1] + pidVelocityAngularOutput[0];
 
     for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
       if(droneData.pwmSignalInUs[i] < 1100) droneData.pwmSignalInUs[i] = 1100;
@@ -503,9 +503,9 @@ void modulator(){
 }
 
 void prepareForNewCycle(){
-  for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR_ANT); i++) {
+  for (int i = 0; i < getArraySize(gyroVelocityAngularAnt); i++) {
     *lastAngles[i] = *PT_ANGLES[i];
-    PT_GYRO_VELOCITY_ANGULAR_ANT[i] = *PT_GYRO_VELOCITY_ANGULAR[i];
+    gyroVelocityAngularAnt[i] = *PT_GYRO_VELOCITY_ANGULAR[i];
   }
 }
 
