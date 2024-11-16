@@ -64,7 +64,7 @@ Drone
   const int FREQUENCY = 50000;
 
   const unsigned int MIN_SPEED = 0;
-  const unsigned int MAX_SPEED = 255;
+  const unsigned int MAX_SPEED = 255; // Caso a velocidade maxima seja muito baixa, você vai precisar resolver o problemas dos motores nem sempre ficaram na mesma velocidade
   const unsigned int SPEED_PIN = 34;
 
 //-------------------------------------|CONTROL|-------------------------------------
