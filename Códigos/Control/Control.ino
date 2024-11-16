@@ -124,8 +124,8 @@ void configJoystick(){
 }
 
 void readJ1Z(){
-  int state = digitalRead(pinJ1ZState);
-
+  int state = digitalRead(PIN_J1Z);
+  
   if (state != lastPinJ1ZState) {
     j1ZLastDebounceTime = millis();
   }
