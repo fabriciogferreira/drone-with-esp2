@@ -27,7 +27,7 @@ Drone
     bool flightMode;
   };
 
-  ControlData controlData;
+  ControlData controlData = {{0, 0, 0}, 0, true};
 
   struct DroneData {
     enum Errors {
@@ -135,8 +135,6 @@ Drone
   bool setGyroAngles = false;
 
   bool isCalibrated = false;
-//-----------------------------------|PREFERENCES|-----------------------------------
-  bool flightMode = true;
 
 //---------------------------------------|PID|---------------------------------------
   float rollAndPitchPIDAngleAdjustment[2][3] = {
@@ -226,8 +224,6 @@ void registerFunctionThatExecutesWhenReceivingResponse(){
 void processRCData(){
   rcThrotle = controlData.throttle > 1800 ? 1800 : controlData.throttle;
 
-  flightMode = controlData.flightMode;
-  
   for (int i = 0; i < getArraySize(controlData.dof); i++) {
     *PT_RC_ANGLES[i] = controlData.dof[i];
   }
@@ -479,7 +475,7 @@ void pidVelocityAngular(){
     if (i == 0) {
       angularVelocityPidAngle = rcYawAngle;
     }else{
-      angularVelocityPidAngle = flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
+      angularVelocityPidAngle = controlData.flightMode ? *PT_ROLL_AND_PITCH_PID_ANGLE_OUTPUT[i - 1] : *PT_RC_ROLL_AND_PITCH_ANGLES[i - 1];
     }
 
     error = angularVelocityPidAngle - *PT_GYRO_VELOCITY_ANGULAR[i];
@@ -539,7 +535,7 @@ void loop() {
   emitPWMSignal();
   readMPU6050();
   processMPU6050Data();
-  if (flightMode) pidAngle();
+  if (controlData.flightMode) pidAngle();
   pidVelocityAngular();
   modulator();
   prepareForNewCycle();
