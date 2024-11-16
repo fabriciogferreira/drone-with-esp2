@@ -22,8 +22,8 @@ Drone
 
 //----------------------------------|COMUNICATION|-----------------------------------
   struct ControlData {
-    unsigned int dof[3];
-    unsigned int throttle;
+    int dof[3];
+    int throttle;
     bool flightMode;
   };
 
