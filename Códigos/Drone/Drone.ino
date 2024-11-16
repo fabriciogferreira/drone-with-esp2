@@ -71,7 +71,6 @@ Drone
 
 //-------------------------------------|CONTROL|-------------------------------------
   int rcYawAngle = 0;
-  int rcThrotle = 0;
   int rcRollAngle = 0;
   int rcPitchAngle = 0;
   int *PT_RC_ANGLES[] = {&rcYawAngle, &rcRollAngle, &rcPitchAngle}; 
@@ -213,8 +212,6 @@ void registerFunctionThatExecutesWhenReceivingResponse(){
 }
 
 void processRCData(){
-  rcThrotle = controlData.throttle > 1800 ? 1800 : controlData.throttle;
-
   for (int i = 0; i < getArraySize(controlData.dof); i++) {
     *PT_RC_ANGLES[i] = controlData.dof[i];
   }
@@ -486,22 +483,20 @@ void pidVelocityAngular(){
 }
 
 void modulator(){
-  if (rcThrotle <= 1300) {
+  if (controlData.throttle <= 1300) {
     for(int i = 0; i < getArraySize(pidVelocityAngularKi); i++) pidVelocityAngularKi[i] = 0;
 
     for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi[i] = 0;
     
     for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
-      droneData.pwmSignalInUs[i] = rcThrotle;
+      droneData.pwmSignalInUs[i] = controlData.throttle;
       if(droneData.pwmSignalInUs[i] < 1000) droneData.pwmSignalInUs[i] = 950;
     }
   } else {
-    if(rcThrotle > 1800) rcThrotle = 1800;
-    
-    droneData.pwmSignalInUs[0] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[1] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[2] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    droneData.pwmSignalInUs[3] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[0] = controlData.throttle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[1] = controlData.throttle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[2] = controlData.throttle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[3] = controlData.throttle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
 
     for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
       if(droneData.pwmSignalInUs[i] < 1100) droneData.pwmSignalInUs[i] = 1100;
