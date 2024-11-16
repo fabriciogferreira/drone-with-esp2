@@ -67,8 +67,6 @@ Drone
   const unsigned int MAX_SPEED = 255;
   const unsigned int SPEED_PIN = 34;
 
-  bool anyEngineOn;
-
 //-------------------------------------|CONTROL|-------------------------------------
   int rcYawAngle = 0;
   int rcRollAngle = 0;
@@ -355,6 +353,8 @@ void emitPWMSignal(){
   IncreaseSpeed();
 
   engineStartTime = micros();
+
+  bool anyEngineOn;
 
   do {
     anyEngineOn = false;
