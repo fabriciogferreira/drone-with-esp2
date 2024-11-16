@@ -36,7 +36,7 @@ Drone
     };
 
     Errors error;
-    unsigned int speed;
+    unsigned int motorSpeed;
     float angles[3];
     float pwmSignalInUs[4];
     float angularVelocities[3];
@@ -346,7 +346,7 @@ void WriteSpeed(int Value) {
 }
 
 void IncreaseSpeed() {
-  for (int i = 0; i < droneData.speed; i++) {
+  for (int i = 0; i < droneData.motorSpeed; i++) {
     WriteSpeed(i);
   }
 }
@@ -518,7 +518,7 @@ void prepareForNewCycle(){
 }
 
 void readSpeed(){
-  droneData.speed = map(analogRead(SPEED_PIN), 0, 4095, MIN_SPEED, MAX_SPEED);
+  droneData.motorSpeed = map(analogRead(SPEED_PIN), 0, 4095, MIN_SPEED, MAX_SPEED);
 }
 
 void loop() {
