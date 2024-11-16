@@ -73,10 +73,16 @@
 
   int *SetPoints[] = {&controlData.dof[0], &controlData.throttle, &controlData.dof[1], &controlData.dof[2]};
 
+  int pinJ1ZState = HIGH;            // DEVE SER O VALOR CONSTANTE DO BOTÃO
+  int lastPinJ1ZState = pinJ1ZState; 
+  unsigned long j1ZLastDebounceTime = 0;  // the last time the output pin was toggled
+  const unsigned int J1Z_DEBOUNCE_DELAY = 50;
+
   int pinJ2ZState = HIGH;            // DEVE SER O VALOR CONSTANTE DO BOTÃO
   int lastPinJ2ZState = pinJ2ZState; 
   unsigned long j2ZLastDebounceTime = 0;  // the last time the output pin was toggled
-  const unsigned int J2Z_DEBOUNCE_DELAY = 50; 
+  const unsigned int J2Z_DEBOUNCE_DELAY = 50;
+
 //--------------------------------------|UTILS|--------------------------------------
   bool stop = true;
 //===================================================================================
@@ -108,20 +114,30 @@ void configDisplay(){
   Display.clearDisplay();
 }
 
-void invertFlightMode(){
-  controlData.flightMode = !controlData.flightMode;
-}
-
 void configJoystick(){
   printOnDisplay("Configurando joysticks", true, 1000, true);
   for (int i = 0; i < getArraySize(PT_PINS_XY_JS); i++) {
     pinMode(*PT_PINS_XY_JS[i], INPUT);
   }
 
-  pinMode(PIN_J1Z, INPUT_PULLUP);
   pinMode(PIN_J2Z, INPUT);
+}
 
-  attachInterrupt(digitalPinToInterrupt(PIN_J1Z), invertFlightMode, FALLING);
+void readJ1Z(){
+  int state = digitalRead(pinJ1ZState);
+
+  if (state != lastPinJ1ZState) {
+    j1ZLastDebounceTime = millis();
+  }
+
+  if ((millis() - j1ZLastDebounceTime) > J1Z_DEBOUNCE_DELAY) {
+    if (state != pinJ1ZState) {
+      pinJ1ZState = state;
+      if (pinJ1ZState == HIGH) controlData.flightMode = !controlData.flightMode;
+    }
+  }
+
+  lastPinJ1ZState = state;
 }
 
 void readJ2Z(){
@@ -245,6 +261,10 @@ void establishConnectionBetweenESPs(){
   }
 }
 
+void configButtonJoystick(){
+  pinMode(PIN_J1Z, INPUT); // é necessário configurar depois do startStationMode, não sei o motivo
+}
+
 void sendDataEspDrone() {
   esp_now_send(SLAVES_MAC_ADDRESSES[0], (uint8_t *) &controlData, sizeof(controlData));
 }
@@ -285,6 +305,7 @@ void setup() {
   getAverageOfJoystickAxes();
   getDeadZonesOfJoystickAxes();
   startStationMode();
+  configButtonJoystick();
   startEspNow();
   registerFunctionThatExecutesWhenReceivingResponse();
   registerFunctionThatExecutesWhenReceivingData();
@@ -338,4 +359,6 @@ void WhenReceivingDataDo(const esp_now_recv_info_t *MAC_ADDRESS, const uint8_t *
   Serial.println();
 }
 
-void loop() {}
+void loop() {
+  readJ1Z();
+}
