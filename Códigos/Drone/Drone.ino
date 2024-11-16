@@ -68,7 +68,6 @@ Drone
   const unsigned int SPEED_PIN = 34;
   unsigned int speed = MIN_SPEED;
 
-  float pwmSignalInUs[] = {0, 0, 0, 0};
   bool anyEngineOn;
 
 //-------------------------------------|CONTROL|-------------------------------------
@@ -203,11 +202,6 @@ void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t 
   droneData.speed = speed;
   for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
     droneData.angles[i] = *PT_ANGLES[i];
-  }
-
-
-  for (int i = 0; i < 4; i++) {
-    droneData.pwmSignalInUs[i] = pwmSignalInUs[i];
   }
 
   for (int i = 0; i < 3; i++) {
@@ -373,7 +367,7 @@ void emitPWMSignal(){
     anyEngineOn = false;
 
     for (int i = 0; i < getArraySize(MOTOR_PINS); i++) {
-      if (engineStartTime + pwmSignalInUs[i] <= micros()) ResetEngineSpeed(MOTOR_PINS[i]);
+      if (engineStartTime + droneData.pwmSignalInUs[i] <= micros()) ResetEngineSpeed(MOTOR_PINS[i]);
       
       if (ledcRead(MOTOR_PINS[i]) > 10) anyEngineOn = true;
     }
@@ -500,21 +494,21 @@ void modulator(){
 
     for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi[i] = 0;
     
-    for(int i = 0; i < getArraySize(pwmSignalInUs); i++){
-      pwmSignalInUs[i] = rcThrotle;
-      if(pwmSignalInUs[i] < 1000) pwmSignalInUs[i] = 950;
+    for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
+      droneData.pwmSignalInUs[i] = rcThrotle;
+      if(droneData.pwmSignalInUs[i] < 1000) droneData.pwmSignalInUs[i] = 950;
     }
   } else {
     if(rcThrotle > 1800) rcThrotle = 1800;
     
-    pwmSignalInUs[0] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    pwmSignalInUs[1] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    pwmSignalInUs[2] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
-    pwmSignalInUs[3] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[0] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[1] = rcThrotle + PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[2] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] + PT_PID_VELOCITY_ANGULAR_OUTPUT[1] - PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
+    droneData.pwmSignalInUs[3] = rcThrotle - PT_PID_VELOCITY_ANGULAR_OUTPUT[2] - PT_PID_VELOCITY_ANGULAR_OUTPUT[1] + PT_PID_VELOCITY_ANGULAR_OUTPUT[0];
 
-    for(int i = 0; i < getArraySize(pwmSignalInUs); i++){
-      if(pwmSignalInUs[i] < 1100) pwmSignalInUs[i] = 1100;
-      if(pwmSignalInUs[i] > 2000) pwmSignalInUs[i] = 2000;
+    for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
+      if(droneData.pwmSignalInUs[i] < 1100) droneData.pwmSignalInUs[i] = 1100;
+      if(droneData.pwmSignalInUs[i] > 2000) droneData.pwmSignalInUs[i] = 2000;
     }
   }
 }
