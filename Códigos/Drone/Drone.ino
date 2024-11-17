@@ -193,9 +193,6 @@ void sendData(){
 void WhenReceivingResponseDo(const uint8_t *MAC_ADDRESS,  esp_now_send_status_t response) {
   for (int i = 0; i < getArraySize(PT_ANGLES); i++) {
     droneData.angles[i] = *PT_ANGLES[i];
-  }
-
-  for (int i = 0; i < 3; i++) {
     droneData.angularVelocities[i] = pidVelocityAngularOutput[i];
   }
 
@@ -368,23 +365,15 @@ void emitPWMSignal(){
 }
 
 void readMPU6050() {
-  Wire.beginTransmission(MPU6050Address);
-  Wire.write(0x3B);
-  Wire.endTransmission();
-  Wire.requestFrom(MPU6050Address, 14);
-  while (Wire.available() < 14);
+  mpu6050.update();
 
-  for (int i = 0; i < getArraySize(PT_MPU6050_DATA); i++) {
-    *PT_MPU6050_DATA[i] = Wire.read() << 8 | Wire.read();
-  }
-
-  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
-  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
-  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
-  // 0x41 (TEMP_OUT_H)   & 0x42 (TEMP_OUT_L)
-  // 0x43 (GYRO_XOUT_H)  & 0x44 (GYRO_XOUT_L)
-  // 0x45 (GYRO_YOUT_H)  & 0x46 (GYRO_YOUT_L)
-  // 0x47 (GYRO_ZOUT_H)  & 0x48 (GYRO_ZOUT_L)
+  *PT_MPU6050_DATA[0] = mpu6050.getRawAccX(); // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
+  *PT_MPU6050_DATA[1] = mpu6050.getRawAccY(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  *PT_MPU6050_DATA[2] = mpu6050.getRawAccZ(); // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  *PT_MPU6050_DATA[3] = mpu6050.getRawTemp(); // 0x41 (TEMP_OUT_H)   & 0x42 (TEMP_OUT_L)
+  *PT_MPU6050_DATA[4] = mpu6050.getRawGyroX(); // 0x43 (GYRO_XOUT_H)  & 0x44 (GYRO_XOUT_L)
+  *PT_MPU6050_DATA[5] = mpu6050.getRawGyroY(); // 0x45 (GYRO_YOUT_H)  & 0x46 (GYRO_YOUT_L)
+  *PT_MPU6050_DATA[6] = mpu6050.getRawGyroZ(); // 0x47 (GYRO_ZOUT_H)  & 0x48 (GYRO_ZOUT_L)
 
   // Restar valores de calibracion del acelerómetro
   if (isCalibrated) {
@@ -397,33 +386,19 @@ void readMPU6050() {
 }
 
 void processMPU6050Data(){
-  // for (int i = 0; i < getArraySize(PT_GYRO_VELOCITY_ANGULAR); i++) {
-  //   *PT_GYRO_VELOCITY_ANGULAR[i] = (*PT_MPU6050_GYR_DATA[i] - *PT_MPU6050_GYR_CAL_DATA[i]) / 65.5;
-  // }
-
   *PT_GYRO_VELOCITY_ANGULAR[0] = mpu6050.getGyroX();
   *PT_GYRO_VELOCITY_ANGULAR[1] = mpu6050.getGyroZ();
   *PT_GYRO_VELOCITY_ANGULAR[2] = mpu6050.getGyroY();
 
-  float mpu6050RuntimeInMs = (micros() - angleCalculationTimeInUs) / 1000;
+  pitchAngle = mpu6050.getAngleX();
+  rollAngle = mpu6050.getAngleY();
 
-  pitchAngle = pitchAngle + angularVelocityGyrX * mpu6050RuntimeInMs / 1000;
-  rollAngle = rollAngle + angularVelocityGyrY * mpu6050RuntimeInMs / 1000;
-
-  pitchAngle = pitchAngle + rollAngle * sin((MPU6050GyrZ - MPU6050GyrCalZ) * mpu6050RuntimeInMs * 0.000000266);
-  rollAngle = rollAngle - pitchAngle * sin((MPU6050GyrZ - MPU6050GyrCalZ) * mpu6050RuntimeInMs * 0.000000266);
-
-  angleCalculationTimeInUs = micros();
-
-  float vectorAcc = sqrt(pow(MPU6050AccX, 2) + pow(MPU6050AccY, 2) + pow(MPU6050AccZ, 2));
-  float pitchAngleAcceleration = asin(MPU6050AccY / vectorAcc) * 57.2958;
-  float rollAngleAcceleration = asin(MPU6050AccX / vectorAcc) * -57.2958;
-
-  mpu6050.update();
+  float pitchAngleAcceleration = mpu6050.getAccAngleX();
+  float rollAngleAcceleration = mpu6050.getAccAngleY();
 
   if (setGyroAngles) {
-    pitchAngle = mpu6050.getAngleX() * 0.995 + pitchAngleAcceleration * 0.005;
-    rollAngle = mpu6050.getAngleY() * 0.995 + rollAngleAcceleration * 0.005;
+    pitchAngle = pitchAngle * 0.995 + pitchAngleAcceleration * 0.005;
+    rollAngle = rollAngle * 0.995 + rollAngleAcceleration * 0.005;
   }else{
     pitchAngle = pitchAngleAcceleration;
     rollAngle = rollAngleAcceleration;
@@ -487,10 +462,8 @@ void modulator(){
 
     for(int i = 0; i < getArraySize(rollAndPitchPidAngleKi); i++) rollAndPitchPidAngleKi[i] = 0;
     
-    for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
-      droneData.pwmSignalInUs[i] = controlData.throttle;
-      if(droneData.pwmSignalInUs[i] < 1000) droneData.pwmSignalInUs[i] = 950;
-    }
+    if(controlData.throttle < 1000) for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++) droneData.pwmSignalInUs[i] = 950;
+
   } else {
     droneData.pwmSignalInUs[0] = controlData.throttle + pidVelocityAngularOutput[2] - pidVelocityAngularOutput[1] - pidVelocityAngularOutput[0];
     droneData.pwmSignalInUs[1] = controlData.throttle + pidVelocityAngularOutput[2] + pidVelocityAngularOutput[1] + pidVelocityAngularOutput[0];
@@ -498,8 +471,11 @@ void modulator(){
     droneData.pwmSignalInUs[3] = controlData.throttle - pidVelocityAngularOutput[2] - pidVelocityAngularOutput[1] + pidVelocityAngularOutput[0];
 
     for(int i = 0; i < getArraySize(droneData.pwmSignalInUs); i++){
-      if(droneData.pwmSignalInUs[i] < 1100) droneData.pwmSignalInUs[i] = 1100;
-      if(droneData.pwmSignalInUs[i] > 2000) droneData.pwmSignalInUs[i] = 2000;
+      if(droneData.pwmSignalInUs[i] < 1100) {
+        droneData.pwmSignalInUs[i] = 1100;
+      } else if (droneData.pwmSignalInUs[i] > 2000) {
+        droneData.pwmSignalInUs[i] = 2000;
+      }
     }
   }
 }
