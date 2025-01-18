@@ -52,3 +52,26 @@ https://arduino.stackexchange.com/questions/94281/how-can-i-compensate-for-a-joy
 ESP32 16 canais independentes de 80 MHz
 
 ESC suporta até 32000Hz
+
+
+
+
+
+
+
+Adafruit BusIO
+Adafruit GFX Library
+Adafruit MCP23017 Arduino Library
+Adafruit SSD1306
+Adafruit Unified Sensor
+MPU6050_tockn
+
+
+Arduino AVR Boards
+Arduino ESP32 Boards
+esp32
+
+
+
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
