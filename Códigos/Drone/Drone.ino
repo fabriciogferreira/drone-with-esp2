@@ -1,13 +1,8 @@
 /*
 Control
-  Organizar código
-  Renomear varivaveis
   utilizar objeto que envia como variavel
 Drone
-  Organizar código
-  Renomear varivaveis
   utilizar objeto que envia como variavel
-  Add variavel channel channel
 */
 
 
